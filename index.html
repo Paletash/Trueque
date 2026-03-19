@@ -81,6 +81,7 @@
     <button onclick="stuTab('logros',this)">Logros</button>
     <button onclick="stuTab('equipo',this)">Mi equipo</button>
     <button onclick="stuTab('ranking',this)">Ranking</button>
+    <button onclick="stuTab('opciones',this)">Opciones</button>
   </div>
   <div style="display:flex;flex:1;min-height:100vh">
     <aside>
@@ -143,6 +144,28 @@
         <p class="page-title">Ranking general</p>
         <div class="card"><div id="stu-rank-list"></div></div>
       </div>
+      <!-- MÓVIL: opciones del alumno -->
+      <div id="stu-opciones" class="page">
+        <p class="page-title">Opciones</p>
+        <div class="card">
+          <div class="card-title">Mi constancia</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <button class="btn-sm" onclick="pdfAlumno()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              Descargar constancia PDF
+            </button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Sesión</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <button class="btn-sm btn-logout" onclick="logout()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+              Cerrar sesión
+            </button>
+          </div>
+        </div>
+      </div>
     </main>
   </div>
 </div>
@@ -156,6 +179,7 @@
     <button onclick="admTab('equipos',this)">Equipos</button>
     <button onclick="admTab('hist',this)">Historial</button>
     <button onclick="admTab('alerts',this)">Alertas</button>
+    <button onclick="admTab('pdfs',this)">PDF / Salir</button>
   </div>
   <div style="display:flex;flex:1;min-height:100vh">
     <aside>
@@ -316,6 +340,42 @@
           <div id="adm-alert-zero"></div>
         </div>
       </div>
+
+      <!-- MÓVIL: PDFs y cerrar sesión -->
+      <div id="adm-pdfs" class="page">
+        <p class="page-title">Reportes PDF</p>
+        <div class="card">
+          <div class="card-title">Descargar reportes</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <button class="btn-sm" onclick="pdfRanking()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/></svg>
+              Ranking completo
+            </button>
+            <button class="btn-sm" onclick="pdfHistorial()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              Historial
+            </button>
+            <button class="btn-sm" onclick="pdfEquipos()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+              Por equipos
+            </button>
+            <button class="btn-sm" onclick="pdfAlertas()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg>
+              Alertas
+            </button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Sesión</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <button class="btn-sm btn-logout" onclick="logout()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+              Cerrar sesión
+            </button>
+          </div>
+        </div>
+      </div>
+
     </main>
   </div>
 </div>

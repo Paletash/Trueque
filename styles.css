@@ -221,7 +221,7 @@ input:focus,select:focus{border-color:var(--green)}
   .metrics{grid-template-columns:repeat(2,1fr)}
   .fg.two{grid-template-columns:1fr}
   aside{display:none}
-  .m-nav{display:flex;overflow-x:auto;gap:4px;padding:.75rem 1rem;background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10}
+  .m-nav{display:flex;overflow-x:auto;gap:4px;padding:.75rem 115px .75rem 1rem;background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10}
   .m-nav button{flex-shrink:0;padding:6px 12px;background:none;border:1px solid var(--border);border-radius:99px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;color:var(--muted)}
   .m-nav button.active{background:var(--green);color:#fff;border-color:var(--green)}
   main{padding:1rem;max-width:100%}

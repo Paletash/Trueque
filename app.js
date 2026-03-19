@@ -373,7 +373,7 @@ function renderStuRanking(myName){
 }
 
 function stuTab(t,el){
-  document.querySelectorAll('#stu-mis,#stu-logros,#stu-equipo,#stu-ranking').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('#stu-mis,#stu-logros,#stu-equipo,#stu-ranking,#stu-opciones').forEach(p=>p.classList.remove('on'));
   document.getElementById('stu-'+t).classList.add('on');
   document.querySelectorAll('#v-stu nav a,#stu-mnav button').forEach(a=>a.classList.remove('active'));
   if(el)el.classList.add('active');
