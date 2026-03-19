@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sustentabilidad 2GM1</title>
+<title>Trueque 2GM1</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
@@ -307,7 +307,7 @@ input:focus,select:focus{border-color:var(--green)}
   <div style="display:flex;flex:1;min-height:100vh">
     <aside>
       <div class="logo">
-        <h1>Sustentabilidad<br>2GM1</h1>
+        <h1>Trueque<br>2GM1</h1>
         <div class="who">Administrador</div>
       </div>
       <div class="nav-sec">Panel</div>
@@ -527,7 +527,8 @@ const ROSTER = {
   "2026401524":["Rodriguez Colin Kerem Alexandra","Eq.1"],
   "2026401237":["Sanchez Gil Hannah Sofia","Eq.1"],
   "2026401262":["Silva Jaimes Aranza Yvonne","Eq.1"],
-  "2026401408":["Velazquez Molina Valeria","Eq.1"]
+  "2026401408":["Velazquez Molina Valeria","Eq.1"],
+  "2800578":["Georgette Del Pilar Pavia Gonzalez","Maestra"]
 };
 
 const TEAM_TOPICS = {
@@ -879,7 +880,7 @@ function pdfHeader(doc,title){
   const fecha=new Date().toLocaleDateString('es-MX',{day:'2-digit',month:'long',year:'numeric'});
   doc.setFillColor(45,106,79);doc.rect(0,0,210,28,'F');
   doc.setTextColor(255,255,255);doc.setFontSize(14);doc.setFont('helvetica','bold');
-  doc.text('Proyecto Sustentabilidad — Grupo 2GM1',14,11);
+  doc.text('Proyecto Trueque — Grupo 2GM1',14,11);
   doc.setFontSize(9);doc.setFont('helvetica','normal');
   doc.text(title,14,18);doc.text(`Generado: ${fecha}`,196,18,{align:'right'});
   doc.setTextColor(0,0,0);return 35;
