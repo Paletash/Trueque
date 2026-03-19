@@ -220,7 +220,7 @@ function choosePath(path){
     passWrap.style.display='none';
   }else{
     lbl.textContent='Correo electrónico';
-    inp.type='email';inp.placeholder='admin@trueque2gm1.com';
+    inp.type='email';inp.placeholder='correo@paletash.com';
     emailWrap.style.display='none';
     passWrap.style.display='block';
   }
