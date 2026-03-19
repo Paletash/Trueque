@@ -893,7 +893,7 @@ function sortedStudents(){return[...STUDENTS].sort((a,b)=>points[b[0]]-points[a[
 
 function pdfRanking(){
   const{jsPDF}=window.jspdf;const doc=new jsPDF();
-  let y=pdfHeader(doc,'Ranking completo de alumnos');
+  let y=pdfHeader(doc,'Ranking completo');
   const sorted=sortedStudents();
   const total=STUDENTS.reduce((s,[n])=>s+points[n],0);
   const debt=STUDENTS.filter(([n])=>points[n]<0).length;
