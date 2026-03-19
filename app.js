@@ -10,7 +10,6 @@ const firebaseConfig = {
   appId:             "1:263937188019:web:df16ccc87c195596ded0c6"
 };
 
-const ADMIN_PASSWORD = "2GM1admin2026";
 
 /* ══════════════════════════════════════════
    ROSTER
@@ -107,7 +106,7 @@ function getMedals(name) {
    ══════════════════════════════════════════ */
 const GRADES = {A:3,B:2,C:1};
 const STUDENTS = Object.entries(ROSTER).map(([b,[n,t]])=>[n,t,b]);
-let db, history=[], points={}, currentPath=null, currentBoleta=null;
+let db, auth, history=[], points={}, currentPath=null, currentBoleta=null;
 let selGradeVal=null, selSignVal=null, unsubscribe=null;
 let chartWeekly=null, chartStuWeekly=null;
 
@@ -136,8 +135,13 @@ function initTheme(){
    FIREBASE
    ══════════════════════════════════════════ */
 function initFirebase(){
-  try{firebase.initializeApp(firebaseConfig);db=firebase.firestore();setDbStatus('ok','Conectado');}
-  catch(e){setDbStatus('err','Sin conexión');console.error(e);}
+  try{
+    firebase.initializeApp(firebaseConfig);
+    db=firebase.firestore();
+    auth=firebase.auth();
+    auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
+    setDbStatus('ok','Conectado');
+  }catch(e){setDbStatus('err','Sin conexión');console.error(e);}
 }
 function setDbStatus(s,l){document.getElementById('db-dot').className='db-dot '+s;document.getElementById('db-label').textContent=l;}
 
@@ -207,8 +211,19 @@ function choosePath(path){
   document.getElementById('card-stu').classList.toggle('active',path==='stu');
   document.getElementById('card-adm').classList.toggle('active',path==='adm');
   const lbl=document.getElementById('login-label'),inp=document.getElementById('login-input');
-  if(path==='stu'){lbl.textContent='Número de boleta';inp.type='text';inp.placeholder='Ej: 2026401475';}
-  else{lbl.textContent='Contraseña de administrador';inp.type='password';inp.placeholder='••••••••••';}
+  const emailWrap=document.getElementById('login-email-wrap');
+  const passWrap=document.getElementById('login-pass-wrap');
+  if(path==='stu'){
+    lbl.textContent='Número de boleta';
+    inp.type='text';inp.placeholder='Ej: 2026401475';
+    emailWrap.style.display='none';
+    passWrap.style.display='none';
+  }else{
+    lbl.textContent='Correo electrónico';
+    inp.type='email';inp.placeholder='admin@trueque2gm1.com';
+    emailWrap.style.display='none';
+    passWrap.style.display='block';
+  }
   document.getElementById('login-form').style.display='block';
   document.getElementById('login-err').textContent='';inp.focus();
 }
@@ -220,15 +235,28 @@ function backToCards(){
 }
 document.getElementById('login-input').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
 function doLogin(){
-  const val=document.getElementById('login-input').value.trim();
   const errEl=document.getElementById('login-err');errEl.textContent='';
-  if(!val){errEl.textContent='Ingresa el dato requerido.';return;}
+  const btn=document.getElementById('login-btn');
   if(currentPath==='stu'){
+    const val=document.getElementById('login-input').value.trim();
+    if(!val){errEl.textContent='Ingresa tu número de boleta.';return;}
     if(!ROSTER[val]){errEl.textContent='Boleta no encontrada. Verifica el número.';return;}
     currentBoleta=val;enterStudentView();
   }else{
-    if(val!==ADMIN_PASSWORD){errEl.textContent='Contraseña incorrecta.';return;}
-    enterAdminView();
+    const email=document.getElementById('login-input').value.trim();
+    const pass=document.getElementById('login-pass').value;
+    if(!email||!pass){errEl.textContent='Ingresa correo y contraseña.';return;}
+    btn.textContent='Entrando...';btn.disabled=true;
+    auth.signInWithEmailAndPassword(email,pass)
+      .then(()=>{ btn.textContent='Entrar';btn.disabled=false; enterAdminView(); })
+      .catch(err=>{
+        btn.textContent='Entrar';btn.disabled=false;
+        if(err.code==='auth/wrong-password'||err.code==='auth/user-not-found'||err.code==='auth/invalid-credential'){
+          errEl.textContent='Correo o contraseña incorrectos.';
+        }else{
+          errEl.textContent='Error al iniciar sesión. Intenta de nuevo.';
+        }
+      });
   }
 }
 
@@ -529,7 +557,7 @@ function admTab(t,el){
    HELPERS
    ══════════════════════════════════════════ */
 function showView(id){document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));document.getElementById(id).classList.add('on');}
-function logout(){if(unsubscribe)unsubscribe();currentBoleta=null;currentPath=null;backToCards();showView('v-login');document.getElementById('login-input').value='';}
+function logout(){if(unsubscribe)unsubscribe();currentBoleta=null;currentPath=null;if(auth)auth.signOut();backToCards();showView('v-login');document.getElementById('login-input').value='';if(document.getElementById('login-pass'))document.getElementById('login-pass').value='';}
 function initials(n){return n.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();}
 function fmtDate(d){const[y,m,day]=d.split('-');return`${day}/${m}/${y}`;}
 function pillCls(p){return p>0?'p-pos':p<0?'p-neg':'p-zero';}

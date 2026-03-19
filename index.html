@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="styles.css">
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
@@ -67,8 +68,18 @@
       <label id="login-label">Número de boleta</label>
       <input id="login-input" type="text" placeholder="Ej: 2026401475" autocomplete="off">
     </div>
+    <!-- Campo extra solo para admin (email) -->
+    <div class="login-input-wrap" id="login-email-wrap" style="display:none;margin-top:-4px">
+      <label>Correo administrador</label>
+      <input id="login-email" type="email" placeholder="admin@trueque2gm1.com" autocomplete="email">
+    </div>
+    <!-- Contraseña admin -->
+    <div class="login-input-wrap" id="login-pass-wrap" style="display:none;margin-top:-4px">
+      <label>Contraseña</label>
+      <input id="login-pass" type="password" placeholder="••••••••••" autocomplete="current-password">
+    </div>
     <div class="login-err" id="login-err"></div>
-    <button class="btn-primary" onclick="doLogin()">Entrar</button>
+    <button class="btn-primary" id="login-btn" onclick="doLogin()">Entrar</button>
     <button class="btn-back" onclick="backToCards()">← Volver</button>
   </div>
   <button class="btn-pub" onclick="showView('v-public')" style="margin-top:1.5rem">Ver página pública del proyecto</button>
