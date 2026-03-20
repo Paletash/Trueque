@@ -386,7 +386,7 @@ const actionsHtml=p.status==='pending'?`
           <option value="C" ${p.category==='C'?'selected':''}>Grado C (Con uso · 1 pt)</option>
         </select>
         <div class="product-card-actions">
-          <button class="btn-approve" onclick="confirmApprove('${p.id}','${p.ownerName}')">Aprobar artículo</button>
+          <button class="btn-approve" onclick="confirmApprove('${p.id}','${p.ownerName}','${p.category}')">Aprobar artículo</button>
           <button class="btn-reject" onclick="showRejectForm('${p.id}')">Rechazar</button>
         </div>
       </div>
@@ -425,24 +425,30 @@ function hideRejectForm(id){
   document.getElementById(`reject-form-${id}`).style.display='none';
 }
 
-async function confirmApprove(productId, ownerName) {
-  // 1. Leer la categoría final que eligió el administrador en el select
+async function confirmApprove(productId, ownerName, originalCategory) {
+  // 1. Leer la categoría final que eligió el administrador
   const catSelect = document.getElementById(`approve-cat-${productId}`).value;
-  const pts = GRADES[catSelect]; // Obtener los puntos correspondientes a esa categoría
+  const pts = GRADES[catSelect]; 
+  
+  // 2. Lógica del comentario automático
+  let autoComment = '';
+  if (catSelect !== originalCategory) {
+    autoComment = `La administración ajustó la categoría de ${originalCategory} a ${catSelect} tras la revisión del artículo.`;
+  }
   
   try {
     const batch = db.batch();
     
-    // 2. Actualizar el producto en Firestore con la nueva categoría y puntos
+    // 3. Actualizar el producto en Firestore
     batch.update(db.collection('products').doc(productId), {
       status: 'approved', 
-      category: catSelect, // Guardamos la categoría final (sobreescribe la del alumno si se cambió)
+      category: catSelect, 
       pointsAwarded: pts, 
       reviewedTs: Date.now(), 
-      adminComment: ''
+      adminComment: autoComment // <-- Se guarda el comentario si hubo un cambio
     });
     
-    // 3. Crear el movimiento de puntos en el historial
+    // 4. Crear el movimiento en el historial
     const movRef = db.collection('movements').doc();
     batch.set(movRef, {
       name: ownerName, 
