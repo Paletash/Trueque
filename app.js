@@ -1101,7 +1101,7 @@ function renderStuTablon(){
     const imgHtml = p.photos && p.photos.length ?
       `<img src="${p.photos[0]}" class="tablon-img" loading="lazy">` :
       `<div class="tablon-img-placeholder">${TYPE_ICONS[p.type]||'📦'}</div>`;
-    return `<div class="tablon-card">
+    return `<div class="tablon-card" onclick="openArtModal('${p.id}')">
       ${imgHtml}
       <div class="tablon-body">
         <div class="tablon-title">${p.title}</div>
@@ -1113,6 +1113,60 @@ function renderStuTablon(){
       </div>
     </div>`;
   }).join('');
+}
+/* ══════════════════════════════════════════
+   MODAL DE ARTÍCULO (TABLÓN)
+   ══════════════════════════════════════════ */
+function openArtModal(id) {
+  const p = allProducts.find(x => x.id === id);
+  if(!p) return;
+  
+  const catColors={A:'var(--green-l)',B:'var(--blue-l)',C:'var(--amber-l)'};
+  const catText={A:'var(--green-d)',B:'var(--blue)',C:'var(--amber)'};
+  
+  // Construir galería de imágenes (si hay más de una, se podrán deslizar)
+  let photosHtml = '';
+  if (p.photos && p.photos.length) {
+    photosHtml = `<div class="modal-photos">` + p.photos.map(url => `<img src="${url}">`).join('') + `</div>`;
+  } else {
+    // Placeholder si por alguna razón no tiene foto
+    photosHtml = `<div style="height:250px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:64px;margin:1rem;border-radius:var(--r);border:1px solid var(--border)">${TYPE_ICONS[p.type]||'📦'}</div>`;
+  }
+
+  // Llenar el modal con los datos del artículo
+  document.getElementById('modal-body').innerHTML = `
+    ${photosHtml}
+    <div class="modal-info">
+      <div class="modal-title">${p.title}</div>
+      <div class="modal-tags">
+        <span style="padding:4px 12px;border-radius:99px;font-size:11px;font-weight:500;background:${catColors[p.category]};color:${catText[p.category]}">Categoría ${p.category}</span>
+        <span style="padding:4px 12px;border-radius:99px;font-size:11px;font-weight:500;background:var(--bg);border:1px solid var(--border);color:var(--text)">${TYPE_ICONS[p.type]||''} ${p.type}</span>
+      </div>
+      
+      <div class="modal-desc">${p.description.replace(/\n/g, '<br>')}</div>
+      
+      <div style="font-size:11px;font-weight:500;color:var(--hint);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px">Ofrecido por</div>
+      <div class="modal-owner">
+        <div class="avatar ${avCls(points[p.ownerName]||0)}">${initials(p.ownerName)}</div>
+        <div>
+          <div style="font-size:13.5px;font-weight:500">${p.ownerName}</div>
+          <div style="font-size:11px;color:var(--muted)">${p.ownerTeam} · ${TEAM_TOPICS[p.ownerTeam]||''}</div>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  // Mostrar el modal y bloquear el scroll del fondo
+  document.getElementById('art-modal').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeArtModal(e) {
+  // Si le dan clic al fondo negro, cerramos el modal
+  if(e && e.target.id === 'art-modal' || !e) {
+    document.getElementById('art-modal').style.display = 'none';
+    document.body.style.overflow = ''; // Restaurar scroll
+  }
 }
 
 /* ══ INIT ══ */

@@ -272,4 +272,34 @@ input:focus,select:focus,textarea:focus{border-color:var(--green)}
   .pub-stats{grid-template-columns:1fr 1fr}
   .tablon-grid{grid-template-columns:repeat(2,1fr)}
 }
+/* ══════════════ MODAL DE ARTÍCULO ══════════════ */
+.modal-overlay {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.4); z-index: 1000;
+  display: flex; align-items: center; justify-content: center;
+  padding: 1rem; backdrop-filter: blur(4px);
+}
+.modal-content {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--rl); width: 100%; max-width: 480px;
+  max-height: 90vh; overflow-y: auto; position: relative;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+}
+.modal-close {
+  position: absolute; top: 12px; right: 12px;
+  background: var(--bg); border: 1px solid var(--border);
+  width: 28px; height: 28px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: var(--muted); transition: all 0.2s;
+  z-index: 10;
+}
+.modal-close:hover { background: var(--red-l); color: var(--red-d); border-color: var(--red-l); }
+.modal-photos { display: flex; overflow-x: auto; gap: 8px; padding: 1rem 1rem 0; scroll-snap-type: x mandatory;}
+.modal-photos img { width: 100%; height: 280px; object-fit: cover; border-radius: var(--r); flex-shrink: 0; scroll-snap-align: start; border: 1px solid var(--border);}
+.modal-info { padding: 1.25rem 1.5rem; }
+.modal-title { font-family: 'DM Serif Display', serif; font-size: 24px; margin-bottom: 8px; line-height: 1.2;}
+.modal-tags { display: flex; gap: 8px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+.modal-desc { font-size: 13.5px; line-height: 1.6; color: var(--text); padding-top: 1.25rem; border-top: 1px solid var(--border); margin-bottom: 1.25rem;}
+.modal-owner { display: flex; align-items: center; gap: 10px; background: var(--bg); padding: 12px; border-radius: var(--r); border: 1px solid var(--border); }
+.tablon-card { cursor: pointer; } /* Hace que aparezca la manita al pasar sobre las tarjetas */
 @media(min-width:641px){.m-nav{display:none}}
