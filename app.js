@@ -377,10 +377,18 @@ function renderCatalogo(){
     const catColors={A:'var(--green-l)',B:'var(--blue-l)',C:'var(--amber-l)'};
     const catText={A:'var(--green-d)',B:'var(--blue)',C:'var(--amber)'};
 
-    const actionsHtml=p.status==='pending'?`
-      <div class="product-card-actions" style="margin-top:8px">
-        <button class="btn-approve" onclick="approveProduct('${p.id}','${p.ownerName}','${p.category}',${GRADES[p.category]})">Aprobar (+${GRADES[p.category]} pts)</button>
-        <button class="btn-reject" onclick="showRejectForm('${p.id}')">Rechazar</button>
+const actionsHtml=p.status==='pending'?`
+      <div style="margin-top:12px; padding-top:12px; border-top:1px dashed var(--border)">
+        <label style="font-size:11px;color:var(--muted);margin-bottom:6px;display:block">Modificar categoría (Alumno sugirió: ${p.category})</label>
+        <select id="approve-cat-${p.id}" style="width:100%; margin-bottom:10px; padding:8px; font-size:13px; border:1px solid var(--border); border-radius:var(--r); background:var(--bg); color:var(--text);">
+          <option value="A" ${p.category==='A'?'selected':''}>Grado A (Impecable · 3 pts)</option>
+          <option value="B" ${p.category==='B'?'selected':''}>Grado B (Buen uso · 2 pts)</option>
+          <option value="C" ${p.category==='C'?'selected':''}>Grado C (Con uso · 1 pt)</option>
+        </select>
+        <div class="product-card-actions">
+          <button class="btn-approve" onclick="confirmApprove('${p.id}','${p.ownerName}')">Aprobar artículo</button>
+          <button class="btn-reject" onclick="showRejectForm('${p.id}')">Rechazar</button>
+        </div>
       </div>
       <div id="reject-form-${p.id}" style="display:none;margin-top:8px">
         <input type="text" id="reject-comment-${p.id}" placeholder="Motivo del rechazo (obligatorio)" style="margin-bottom:6px">
@@ -417,21 +425,40 @@ function hideRejectForm(id){
   document.getElementById(`reject-form-${id}`).style.display='none';
 }
 
-async function approveProduct(productId, ownerName, category, pts){
-  try{
-    const batch=db.batch();
-    batch.update(db.collection('products').doc(productId),{
-      status:'approved', pointsAwarded:pts, reviewedTs:Date.now(), adminComment:''
+async function confirmApprove(productId, ownerName) {
+  // 1. Leer la categoría final que eligió el administrador en el select
+  const catSelect = document.getElementById(`approve-cat-${productId}`).value;
+  const pts = GRADES[catSelect]; // Obtener los puntos correspondientes a esa categoría
+  
+  try {
+    const batch = db.batch();
+    
+    // 2. Actualizar el producto en Firestore con la nueva categoría y puntos
+    batch.update(db.collection('products').doc(productId), {
+      status: 'approved', 
+      category: catSelect, // Guardamos la categoría final (sobreescribe la del alumno si se cambió)
+      pointsAwarded: pts, 
+      reviewedTs: Date.now(), 
+      adminComment: ''
     });
-    const movRef=db.collection('movements').doc();
-    batch.set(movRef,{
-      name:ownerName, grade:category, sign:'+', delta:pts,
-      date:new Date().toISOString().slice(0,10),
-      desc:`Artículo aprobado (Cat. ${category})`,
-      ts:Date.now(), auto:true
+    
+    // 3. Crear el movimiento de puntos en el historial
+    const movRef = db.collection('movements').doc();
+    batch.set(movRef, {
+      name: ownerName, 
+      grade: catSelect, 
+      sign: '+', 
+      delta: pts,
+      date: new Date().toISOString().slice(0,10),
+      desc: `Artículo aprobado (Cat. ${catSelect})`,
+      ts: Date.now(), 
+      auto: true
     });
+    
     await batch.commit();
-  }catch(e){alert('Error al aprobar: '+e.message);}
+  } catch(e) {
+    alert('Error al aprobar: ' + e.message);
+  }
 }
 
 async function confirmReject(productId){
@@ -1114,60 +1141,7 @@ function renderStuTablon(){
     </div>`;
   }).join('');
 }
-/* ══════════════════════════════════════════
-   MODAL DE ARTÍCULO (TABLÓN)
-   ══════════════════════════════════════════ */
-function openArtModal(id) {
-  const p = allProducts.find(x => x.id === id);
-  if(!p) return;
-  
-  const catColors={A:'var(--green-l)',B:'var(--blue-l)',C:'var(--amber-l)'};
-  const catText={A:'var(--green-d)',B:'var(--blue)',C:'var(--amber)'};
-  
-  // Construir galería de imágenes (si hay más de una, se podrán deslizar)
-  let photosHtml = '';
-  if (p.photos && p.photos.length) {
-    photosHtml = `<div class="modal-photos">` + p.photos.map(url => `<img src="${url}">`).join('') + `</div>`;
-  } else {
-    // Placeholder si por alguna razón no tiene foto
-    photosHtml = `<div style="height:250px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:64px;margin:1rem;border-radius:var(--r);border:1px solid var(--border)">${TYPE_ICONS[p.type]||'📦'}</div>`;
-  }
 
-  // Llenar el modal con los datos del artículo
-  document.getElementById('modal-body').innerHTML = `
-    ${photosHtml}
-    <div class="modal-info">
-      <div class="modal-title">${p.title}</div>
-      <div class="modal-tags">
-        <span style="padding:4px 12px;border-radius:99px;font-size:11px;font-weight:500;background:${catColors[p.category]};color:${catText[p.category]}">Categoría ${p.category}</span>
-        <span style="padding:4px 12px;border-radius:99px;font-size:11px;font-weight:500;background:var(--bg);border:1px solid var(--border);color:var(--text)">${TYPE_ICONS[p.type]||''} ${p.type}</span>
-      </div>
-      
-      <div class="modal-desc">${p.description.replace(/\n/g, '<br>')}</div>
-      
-      <div style="font-size:11px;font-weight:500;color:var(--hint);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px">Ofrecido por</div>
-      <div class="modal-owner">
-        <div class="avatar ${avCls(points[p.ownerName]||0)}">${initials(p.ownerName)}</div>
-        <div>
-          <div style="font-size:13.5px;font-weight:500">${p.ownerName}</div>
-          <div style="font-size:11px;color:var(--muted)">${p.ownerTeam} · ${TEAM_TOPICS[p.ownerTeam]||''}</div>
-        </div>
-      </div>
-    </div>
-  `;
-  
-  // Mostrar el modal y bloquear el scroll del fondo
-  document.getElementById('art-modal').style.display = 'flex';
-  document.body.style.overflow = 'hidden';
-}
-
-function closeArtModal(e) {
-  // Si le dan clic al fondo negro, cerramos el modal
-  if(e && e.target.id === 'art-modal' || !e) {
-    document.getElementById('art-modal').style.display = 'none';
-    document.body.style.overflow = ''; // Restaurar scroll
-  }
-}
 
 /* ══ INIT ══ */
 initTheme();
