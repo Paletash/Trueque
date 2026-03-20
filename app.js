@@ -10,7 +10,6 @@ const firebaseConfig = {
   appId:             "1:263937188019:web:df16ccc87c195596ded0c6"
 };
 
-
 /* ══════════════════════════════════════════
    ROSTER
    ══════════════════════════════════════════ */
@@ -75,8 +74,13 @@ const TEAM_TOPICS = {
   "Eq.9":"Siendo Más Cultos","Maestra":"Docente"
 };
 
+const TYPE_ICONS = {
+  "Ropa":"👕","Libros":"📚","Joyería":"💍","Electrónicos":"📱",
+  "Juguetes":"🧸","Hogar":"🏠","Deportes":"⚽","Arte":"🎨","Otro":"📦"
+};
+
 /* ══════════════════════════════════════════
-   LOGROS / ACHIEVEMENTS
+   LOGROS
    ══════════════════════════════════════════ */
 const ACHIEVEMENTS = [
   { id:'primer_paso', icon:'🌱', name:'Primer paso',    desc:'Tienes tu primer movimiento registrado', check:(p,moves)=>moves>=1 },
@@ -87,6 +91,8 @@ const ACHIEVEMENTS = [
   { id:'triple',      icon:'🎯', name:'Triple grado',   desc:'Tienes aportaciones A, B y C',           check:(p,moves,grades)=>grades.has('A')&&grades.has('B')&&grades.has('C') },
   { id:'positivo',    icon:'💚', name:'Siempre positivo',desc:'Saldo positivo con 3+ movimientos',     check:(p,moves)=>p>0&&moves>=3 },
   { id:'lider',       icon:'🏆', name:'Líder',          desc:'Acumulaste 25 puntos o más',             check:(p)=>p>=25 },
+  { id:'catalogador', icon:'📦', name:'Catalogador',    desc:'Subiste tu primer artículo aprobado',    check:(p,moves,grades,products)=>products>=1 },
+  { id:'coleccionista',icon:'🛍️',name:'Coleccionista',  desc:'Tienes 3 o más artículos aprobados',    check:(p,moves,grades,products)=>products>=3 },
 ];
 
 function getAchievements(name) {
@@ -94,7 +100,8 @@ function getAchievements(name) {
   const p = points[name]||0;
   const moves = mine.length;
   const grades = new Set(mine.filter(m=>m.sign==='+').map(m=>m.grade));
-  return ACHIEVEMENTS.map(a=>({...a, unlocked:a.check(p,moves,grades)}));
+  const approvedProducts = allProducts.filter(pr=>pr.ownerName===name&&pr.status==='approved').length;
+  return ACHIEVEMENTS.map(a=>({...a, unlocked:a.check(p,moves,grades,approvedProducts)}));
 }
 
 function getMedals(name) {
@@ -106,9 +113,14 @@ function getMedals(name) {
    ══════════════════════════════════════════ */
 const GRADES = {A:3,B:2,C:1};
 const STUDENTS = Object.entries(ROSTER).map(([b,[n,t]])=>[n,t,b]);
-let db, auth, history=[], points={}, currentPath=null, currentBoleta=null;
-let selGradeVal=null, selSignVal=null, unsubscribe=null;
+let db, auth, storage;
+let history=[], points={}, allProducts=[];
+let currentPath=null, currentBoleta=null;
+let selGradeVal=null, selSignVal=null, artCatVal=null;
+let unsubscribe=null, unsubProducts=null;
 let chartWeekly=null, chartStuWeekly=null;
+let reviewTabState='pending';
+let selectedPhotoFiles=[], tablonFilterState='';
 
 STUDENTS.forEach(([n])=>{points[n]=0;});
 
@@ -139,11 +151,15 @@ function initFirebase(){
     firebase.initializeApp(firebaseConfig);
     db=firebase.firestore();
     auth=firebase.auth();
+    storage=firebase.storage();
     auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
     setDbStatus('ok','Conectado');
   }catch(e){setDbStatus('err','Sin conexión');console.error(e);}
 }
-function setDbStatus(s,l){document.getElementById('db-dot').className='db-dot '+s;document.getElementById('db-label').textContent=l;}
+function setDbStatus(s,l){
+  document.getElementById('db-dot').className='db-dot '+s;
+  document.getElementById('db-label').textContent=l;
+}
 
 function subscribeToData(cb){
   if(unsubscribe)unsubscribe();
@@ -153,9 +169,323 @@ function subscribeToData(cb){
   },err=>{setDbStatus('err','Error de conexión');console.error(err);});
 }
 
+function subscribeToProducts(cb){
+  if(unsubProducts)unsubProducts();
+  unsubProducts=db.collection('products').orderBy('ts','desc').onSnapshot(snap=>{
+    allProducts=snap.docs.map(d=>({id:d.id,...d.data()}));
+    cb();
+  },err=>{console.error(err);});
+}
+
 function recalc(){
   STUDENTS.forEach(([n])=>{points[n]=0;});
   history.forEach(m=>{points[m.name]=(points[m.name]||0)+m.delta;});
+}
+
+/* ══════════════════════════════════════════
+   IMAGE COMPRESSION
+   ══════════════════════════════════════════ */
+function compressImage(file, maxWidth=900){
+  return new Promise(resolve=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      const img=new Image();
+      img.onload=()=>{
+        const canvas=document.createElement('canvas');
+        let w=img.width, h=img.height;
+        if(w>maxWidth){h=Math.round(h*maxWidth/w);w=maxWidth;}
+        canvas.width=w;canvas.height=h;
+        canvas.getContext('2d').drawImage(img,0,0,w,h);
+        canvas.toBlob(blob=>resolve(new File([blob],file.name,{type:'image/jpeg'})),'image/jpeg',0.82);
+      };
+      img.src=e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+/* ══════════════════════════════════════════
+   PHOTO UPLOAD PREVIEW
+   ══════════════════════════════════════════ */
+function previewPhotos(input){
+  const files=Array.from(input.files).slice(0,4);
+  selectedPhotoFiles=files;
+  const wrap=document.getElementById('art-previews');
+  wrap.innerHTML='';
+  files.forEach((f,i)=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      const div=document.createElement('div');
+      div.className='photo-preview-wrap';
+      div.innerHTML=`<img src="${e.target.result}"><button class="photo-preview-remove" onclick="removePhoto(${i})">×</button>`;
+      wrap.appendChild(div);
+    };
+    reader.readAsDataURL(f);
+  });
+}
+
+function removePhoto(idx){
+  selectedPhotoFiles.splice(idx,1);
+  const fakeInput={files:selectedPhotoFiles};
+  previewPhotos(fakeInput);
+}
+
+/* ══════════════════════════════════════════
+   ARTICLE SUBMISSION (Student)
+   ══════════════════════════════════════════ */
+function selectArtCat(c){
+  artCatVal=c;
+  ['A','B','C'].forEach(x=>{
+    document.getElementById('art-gb-'+x).className='gb'+(x===c?' '+x:'');
+  });
+}
+
+function showArtToast(msg,ok){
+  const el=document.getElementById('art-toast');
+  el.textContent=msg;
+  el.className='toast '+(ok?'ok':'err');
+  setTimeout(()=>el.className='toast',3000);
+}
+
+async function submitArticulo(){
+  const title=document.getElementById('art-title').value.trim();
+  const type=document.getElementById('art-type').value;
+  const desc=document.getElementById('art-desc').value.trim();
+
+  if(!title){showArtToast('Escribe el nombre del artículo',false);return;}
+  if(!type){showArtToast('Selecciona el tipo de artículo',false);return;}
+  if(!artCatVal){showArtToast('Selecciona la categoría A, B o C',false);return;}
+  if(!desc){showArtToast('Agrega una descripción',false);return;}
+  if(selectedPhotoFiles.length===0){showArtToast('Sube al menos una fotografía',false);return;}
+
+  const btn=document.getElementById('art-submit-btn');
+  btn.disabled=true; btn.textContent='Subiendo fotos...';
+
+  const progressWrap=document.getElementById('upload-progress');
+  const progressBar=document.getElementById('upload-progress-bar');
+  progressWrap.style.display='block'; progressBar.style.width='0%';
+
+  try{
+    const photoURLs=[];
+    for(let i=0;i<selectedPhotoFiles.length;i++){
+      const compressed=await compressImage(selectedPhotoFiles[i]);
+      const ref = storage.ref(`products/${currentBoleta}/${Date.now()}_${i}.jpg`);
+      await ref.put(compressed);
+      const url=await ref.getDownloadURL();
+      photoURLs.push(url);
+      progressBar.style.width=`${Math.round((i+1)/selectedPhotoFiles.length*100)}%`;
+    }
+
+    const[ownerName,ownerTeam]=ROSTER[currentBoleta];
+    await db.collection('products').add({
+      ownerName, ownerTeam, ownerBoleta:currentBoleta,
+      title, type, category:artCatVal, description:desc,
+      photos:photoURLs,
+      status:'pending',
+      adminComment:'',
+      pointsAwarded:0,
+      ts:Date.now(), reviewedTs:null
+    });
+
+    btn.disabled=false; btn.textContent='Enviar para revisión';
+    progressWrap.style.display='none';
+    showArtToast('¡Artículo enviado! El equipo lo revisará pronto.',true);
+    document.getElementById('art-title').value='';
+    document.getElementById('art-type').value='';
+    document.getElementById('art-desc').value='';
+    document.getElementById('art-previews').innerHTML='';
+    document.getElementById('art-photos').value='';
+    selectedPhotoFiles=[];
+    artCatVal=null;
+    ['A','B','C'].forEach(x=>document.getElementById('art-gb-'+x).className='gb');
+
+  }catch(e){
+    btn.disabled=false; btn.textContent='Enviar para revisión';
+    progressWrap.style.display='none';
+    showArtToast('Error al subir. Revisa tu conexión.',false);
+    console.error(e);
+  }
+}
+
+/* ══════════════════════════════════════════
+   RENDER STUDENT ARTICLES
+   ══════════════════════════════════════════ */
+function renderStuArticulos(ownerName){
+  const mine=allProducts.filter(p=>p.ownerName===ownerName);
+  const el=document.getElementById('stu-mis-articulos');
+  if(!mine.length){el.innerHTML='<div class="empty">Aún no has enviado ningún artículo</div>';return;}
+  el.innerHTML=mine.map(p=>{
+    const statusHtml=p.status==='pending'?
+      '<span class="status-pending">Pendiente de revisión</span>':
+      p.status==='approved'?
+      `<span class="status-approved">Aprobado · +${p.pointsAwarded} pts</span>`:
+      `<span class="status-rejected">Rechazado</span>`;
+    const comment=p.adminComment?`<div style="font-size:12px;color:var(--muted);margin-top:4px;padding:6px 8px;background:var(--bg);border-radius:var(--r)">Comentario: ${p.adminComment}</div>`:'';
+    const photoHtml=p.photos&&p.photos.length?
+      `<img src="${p.photos[0]}" style="width:64px;height:64px;object-fit:cover;border-radius:var(--r);border:1px solid var(--border);flex-shrink:0">`:
+      `<div style="width:64px;height:64px;border-radius:var(--r);background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:24px;border:1px solid var(--border)">${TYPE_ICONS[p.type]||'📦'}</div>`;
+    return`<div style="display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);align-items:flex-start">
+      ${photoHtml}
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13.5px;font-weight:500">${p.title}</div>
+        <div style="font-size:11px;color:var(--muted);margin:2px 0">${TYPE_ICONS[p.type]||''} ${p.type} · Cat. ${p.category} · ${fmtDate(new Date(p.ts).toISOString().slice(0,10))}</div>
+        ${statusHtml}
+        ${comment}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ══════════════════════════════════════════
+   ADMIN CATALOG
+   ══════════════════════════════════════════ */
+let pendingRejectId=null;
+
+function switchReviewTab(tab,el){
+  reviewTabState=tab;
+  document.querySelectorAll('.review-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  renderCatalogo();
+}
+
+function renderCatalogo(){
+  const filtered=allProducts.filter(p=>p.status===reviewTabState);
+  const pending=allProducts.filter(p=>p.status==='pending').length;
+
+  document.getElementById('tab-count-pending').textContent=pending;
+  document.getElementById('tab-count-pending').style.display=pending?'inline':'none';
+  const badgeCat=document.getElementById('adm-badge-cat');
+  const badgeCat2=document.getElementById('adm-badge-cat2');
+  if(pending>0){
+    badgeCat.textContent=pending;badgeCat.style.display='inline';
+    badgeCat2.textContent=pending;badgeCat2.style.display='inline';
+  }else{
+    badgeCat.style.display='none';badgeCat2.style.display='none';
+  }
+
+  const el=document.getElementById('catalogo-list');
+  if(!filtered.length){
+    el.innerHTML=`<div class="empty">${reviewTabState==='pending'?'Sin artículos pendientes de revisión':reviewTabState==='approved'?'Sin artículos aprobados aún':'Sin artículos rechazados'}</div>`;
+    return;
+  }
+
+  el.innerHTML=filtered.map(p=>{
+    const photosHtml=p.photos&&p.photos.length?
+      p.photos.map(url=>`<img src="${url}" style="width:80px;height:80px;object-fit:cover;border-radius:var(--r);border:1px solid var(--border)">`).join(''):
+      `<div style="width:80px;height:80px;border-radius:var(--r);background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:28px;border:1px solid var(--border)">${TYPE_ICONS[p.type]||'📦'}</div>`;
+
+    const catColors={A:'var(--green-l)',B:'var(--blue-l)',C:'var(--amber-l)'};
+    const catText={A:'var(--green-d)',B:'var(--blue)',C:'var(--amber)'};
+
+    const actionsHtml=p.status==='pending'?`
+      <div class="product-card-actions" style="margin-top:8px">
+        <button class="btn-approve" onclick="approveProduct('${p.id}','${p.ownerName}','${p.category}',${GRADES[p.category]})">Aprobar (+${GRADES[p.category]} pts)</button>
+        <button class="btn-reject" onclick="showRejectForm('${p.id}')">Rechazar</button>
+      </div>
+      <div id="reject-form-${p.id}" style="display:none;margin-top:8px">
+        <input type="text" id="reject-comment-${p.id}" placeholder="Motivo del rechazo (obligatorio)" style="margin-bottom:6px">
+        <div style="display:flex;gap:6px">
+          <button class="btn-approve" style="background:var(--red)" onclick="confirmReject('${p.id}')">Confirmar rechazo</button>
+          <button class="btn-reject" onclick="hideRejectForm('${p.id}')">Cancelar</button>
+        </div>
+      </div>`:
+      p.status==='approved'?`<div style="margin-top:6px"><span class="status-approved">Aprobado · +${p.pointsAwarded} pts asignados</span></div>`:
+      `<div style="margin-top:6px"><span class="status-rejected">Rechazado</span>${p.adminComment?`<div style="font-size:12px;color:var(--muted);margin-top:4px">Motivo: ${p.adminComment}</div>`:''}`;
+
+    return`<div class="product-card">
+      <div style="display:flex;gap:6px;padding:.75rem .75rem 0;overflow-x:auto">${photosHtml}</div>
+      <div style="padding:.75rem">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">
+          <span style="font-size:14px;font-weight:500">${p.title}</span>
+          <span style="font-size:11px;padding:2px 8px;border-radius:99px;background:${catColors[p.category]};color:${catText[p.category]};font-weight:500">Cat. ${p.category}</span>
+          <span style="font-size:11px;color:var(--muted)">${TYPE_ICONS[p.type]||''} ${p.type}</span>
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:4px">
+          ${p.ownerName} · ${p.ownerTeam} · ${fmtDate(new Date(p.ts).toISOString().slice(0,10))}
+        </div>
+        <div style="font-size:12px;color:var(--text);line-height:1.5">${p.description}</div>
+        ${actionsHtml}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function showRejectForm(id){
+  document.getElementById(`reject-form-${id}`).style.display='block';
+}
+function hideRejectForm(id){
+  document.getElementById(`reject-form-${id}`).style.display='none';
+}
+
+async function approveProduct(productId, ownerName, category, pts){
+  try{
+    const batch=db.batch();
+    batch.update(db.collection('products').doc(productId),{
+      status:'approved', pointsAwarded:pts, reviewedTs:Date.now(), adminComment:''
+    });
+    const movRef=db.collection('movements').doc();
+    batch.set(movRef,{
+      name:ownerName, grade:category, sign:'+', delta:pts,
+      date:new Date().toISOString().slice(0,10),
+      desc:`Artículo aprobado (Cat. ${category})`,
+      ts:Date.now(), auto:true
+    });
+    await batch.commit();
+  }catch(e){alert('Error al aprobar: '+e.message);}
+}
+
+async function confirmReject(productId){
+  const comment=document.getElementById(`reject-comment-${productId}`).value.trim();
+  if(!comment){alert('Escribe el motivo del rechazo');return;}
+  try{
+    await db.collection('products').doc(productId).update({
+      status:'rejected', adminComment:comment, reviewedTs:Date.now(), pointsAwarded:0
+    });
+  }catch(e){alert('Error al rechazar: '+e.message);}
+}
+
+/* ══════════════════════════════════════════
+   TABLÓN PÚBLICO
+   ══════════════════════════════════════════ */
+function filterTablon(val, el){
+  tablonFilterState=val;
+  document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  renderTablon();
+}
+
+function renderTablon(){
+  const approved=allProducts.filter(p=>p.status==='approved');
+  const filtered=tablonFilterState===''?approved:
+    approved.filter(p=>p.category===tablonFilterState||p.type===tablonFilterState);
+
+  document.getElementById('pub-products').textContent=approved.length;
+
+  const el=document.getElementById('pub-tablon');
+  if(!filtered.length){
+    el.innerHTML='<div class="empty" style="grid-column:1/-1">No hay artículos disponibles en esta categoría</div>';
+    return;
+  }
+
+  const catColors={A:'var(--green-l)',B:'var(--blue-l)',C:'var(--amber-l)'};
+  const catText={A:'var(--green-d)',B:'var(--blue)',C:'var(--amber)'};
+
+  el.innerHTML=filtered.map(p=>{
+    const imgHtml=p.photos&&p.photos.length?
+      `<img src="${p.photos[0]}" class="tablon-img" loading="lazy">`:
+      `<div class="tablon-img-placeholder">${TYPE_ICONS[p.type]||'📦'}</div>`;
+    return`<div class="tablon-card">
+      ${imgHtml}
+      <div class="tablon-body">
+        <div class="tablon-title">${p.title}</div>
+        <div class="tablon-meta">
+          <span style="padding:1px 7px;border-radius:99px;font-size:10px;font-weight:500;background:${catColors[p.category]};color:${catText[p.category]}">Cat. ${p.category}</span>
+          <span>${TYPE_ICONS[p.type]||''} ${p.type}</span>
+        </div>
+        <div style="font-size:11px;color:var(--hint);margin-top:4px">${p.ownerName.split(' ').slice(0,2).join(' ')} · ${p.ownerTeam}</div>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 /* ══════════════════════════════════════════
@@ -206,34 +536,37 @@ function renderStuChart(name){
    LOGIN
    ══════════════════════════════════════════ */
 function goToLogin(){showView('v-login');}
+
 function choosePath(path){
   currentPath=path;
   document.getElementById('card-stu').classList.toggle('active',path==='stu');
   document.getElementById('card-adm').classList.toggle('active',path==='adm');
   const lbl=document.getElementById('login-label'),inp=document.getElementById('login-input');
-  const emailWrap=document.getElementById('login-email-wrap');
   const passWrap=document.getElementById('login-pass-wrap');
   if(path==='stu'){
     lbl.textContent='Número de boleta';
     inp.type='text';inp.placeholder='Ej: 2026401475';
-    emailWrap.style.display='none';
     passWrap.style.display='none';
   }else{
     lbl.textContent='Correo electrónico';
-    inp.type='email';inp.placeholder='correo@paletash.com';
-    emailWrap.style.display='none';
+    inp.type='email';inp.placeholder='admin@circulocero.com';
     passWrap.style.display='block';
   }
   document.getElementById('login-form').style.display='block';
-  document.getElementById('login-err').textContent='';inp.focus();
+  document.getElementById('login-err').textContent='';
+  inp.focus();
 }
+
 function backToCards(){
   document.getElementById('login-form').style.display='none';
   document.getElementById('card-stu').classList.remove('active');
   document.getElementById('card-adm').classList.remove('active');
-  document.getElementById('login-err').textContent='';currentPath=null;
+  document.getElementById('login-err').textContent='';
+  currentPath=null;
 }
+
 document.getElementById('login-input').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+
 function doLogin(){
   const errEl=document.getElementById('login-err');errEl.textContent='';
   const btn=document.getElementById('login-btn');
@@ -248,7 +581,7 @@ function doLogin(){
     if(!email||!pass){errEl.textContent='Ingresa correo y contraseña.';return;}
     btn.textContent='Entrando...';btn.disabled=true;
     auth.signInWithEmailAndPassword(email,pass)
-      .then(()=>{ btn.textContent='Entrar';btn.disabled=false; enterAdminView(); })
+      .then(()=>{btn.textContent='Entrar';btn.disabled=false;enterAdminView();})
       .catch(err=>{
         btn.textContent='Entrar';btn.disabled=false;
         if(err.code==='auth/wrong-password'||err.code==='auth/user-not-found'||err.code==='auth/invalid-credential'){
@@ -266,10 +599,8 @@ function doLogin(){
 function renderPublic(){
   const total=STUDENTS.reduce((s,[n])=>s+points[n],0);
   const moves=history.length;
-  const active=STUDENTS.filter(([n])=>history.some(m=>m.name===n)).length;
   document.getElementById('pub-total-pts').textContent=total>0?'+'+total:total;
   document.getElementById('pub-moves').textContent=moves;
-  document.getElementById('pub-active').textContent=active;
 
   const sorted=[...STUDENTS].sort((a,b)=>points[b[0]]-points[a[0]]);
   const top3=sorted.slice(0,3);
@@ -299,6 +630,8 @@ function renderPublic(){
       <div class="tc-bar"><div class="tc-bar-fill" style="width:${pct}%"></div></div>
     </div>`;
   }).join('');
+
+  renderTablon();
 }
 
 /* ══════════════════════════════════════════
@@ -312,12 +645,15 @@ function enterStudentView(){
   document.getElementById('stu-team-title').textContent=team+' — '+(TEAM_TOPICS[team]||'');
   showView('v-stu');
   subscribeToData(()=>{renderStuAll(name,team);});
+  subscribeToProducts(()=>{renderStuAll(name,team);});
 }
 
 function renderStuAll(name,team){
   renderStuHero(name);renderStuHist(name);renderStuTeam(team,name);
   renderStuRanking(name);renderStuAchievements(name);
   renderStuTeamCard(team);renderStuChart(name);
+  renderStuArticulos(name);
+  renderStuTablon();
 }
 
 function renderStuHero(name){
@@ -350,9 +686,7 @@ function renderStuTeamCard(team){
   const members=STUDENTS.filter(([,t])=>t===team);
   const tp=members.reduce((s,[n])=>s+points[n],0);
   const neg=members.filter(([n])=>points[n]<0).length;
-  const maxAll=Math.max(...Object.entries(
-    Object.fromEntries(['Eq.1','Eq.2','Eq.3','Eq.4','Eq.5','Eq.6','Eq.7','Eq.8','Eq.9'].map(t=>[t,STUDENTS.filter(([,tt])=>tt===t).reduce((s,[n])=>s+points[n],0)]))
-  ).map(([,v])=>v),1);
+  const maxAll=Math.max(...['Eq.1','Eq.2','Eq.3','Eq.4','Eq.5','Eq.6','Eq.7','Eq.8','Eq.9'].map(t=>STUDENTS.filter(([,tt])=>tt===t).reduce((s,[n])=>s+points[n],0)),1);
   const pct=Math.round(Math.abs(tp)/maxAll*100);
   document.getElementById('stu-team-card').innerHTML=`
     <div class="card-title">${team} — ${TEAM_TOPICS[team]||''}</div>
@@ -360,7 +694,7 @@ function renderStuTeamCard(team){
       <span style="font-family:'DM Serif Display',serif;font-size:28px;color:var(--green)">${tp>0?'+':''}${tp}</span>
       <span style="font-size:12px;color:var(--muted)">puntos del equipo</span>
     </div>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:.75rem">${members.length} integrantes${neg?' · <span style="color:var(--red)">'+(neg)+' en negativo</span>':''}</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:.75rem">${members.length} integrantes${neg?` · <span style="color:var(--red)">${neg} en negativo</span>`:''}</div>
     <div class="bar-bg" style="width:100%"><div class="bar-fill" style="width:${pct}%;background:var(--green)"></div></div>
   `;
 }
@@ -401,7 +735,7 @@ function renderStuRanking(myName){
 }
 
 function stuTab(t,el){
-  document.querySelectorAll('#stu-mis,#stu-logros,#stu-equipo,#stu-ranking,#stu-opciones').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('#stu-mis,#stu-articulos,#stu-tablon,#stu-logros,#stu-equipo,#stu-ranking,#stu-opciones').forEach(p=>p.classList.remove('on'));
   document.getElementById('stu-'+t).classList.add('on');
   document.querySelectorAll('#v-stu nav a,#stu-mnav button').forEach(a=>a.classList.remove('active'));
   if(el)el.classList.add('active');
@@ -413,6 +747,7 @@ function stuTab(t,el){
 function enterAdminView(){
   showView('v-adm');populateStu();initDate();
   subscribeToData(()=>{renderAdmAll();renderPublic();});
+  subscribeToProducts(()=>{renderCatalogo();renderPublic();});
 }
 
 function renderAdmAll(){
@@ -440,7 +775,6 @@ function renderAdmDash(){
       <span class="pill ${pillCls(p)}">${p>0?'+':''}${p}</span>
     </div>`;
   }).join('');
-
   document.getElementById('adm-recent').innerHTML=history.slice(0,6).map(m=>histItemHtml(m,true)).join('')||'<div class="empty">Sin movimientos aún</div>';
 }
 
@@ -517,7 +851,6 @@ function renderAdmAlerts(){
     </div>`).join('')||'<div class="empty">Todos tienen al menos un registro</div>';
 }
 
-/* ── Register ── */
 function populateStu(q=''){
   const sel=document.getElementById('sel-stu');sel.innerHTML='';
   STUDENTS.filter(([n])=>n.toLowerCase().includes(q.toLowerCase())).forEach(([n,t])=>{
@@ -543,7 +876,7 @@ async function doRegister(){
     await db.collection('movements').add({name,grade:selGradeVal,sign:selSignVal,delta,date,desc,ts:Date.now()});
     showT(`✓ ${delta>0?'+':''}${delta} pts para ${name.split(' ')[0]}`,true);
     document.getElementById('mov-desc').value='';
-  }catch(e){showT('Error al guardar. Verifica la conexión.',false);console.error(e);}
+  }catch(e){showT('Error al guardar.',false);console.error(e);}
 }
 
 function admTab(t,el){
@@ -551,13 +884,14 @@ function admTab(t,el){
   document.getElementById('adm-'+t).classList.add('on');
   document.querySelectorAll('#adm-nav a,#adm-mnav button').forEach(a=>a.classList.remove('active'));
   if(el)el.classList.add('active');
+  if(t==='catalogo')renderCatalogo();
 }
 
 /* ══════════════════════════════════════════
    HELPERS
    ══════════════════════════════════════════ */
 function showView(id){document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));document.getElementById(id).classList.add('on');}
-function logout(){if(unsubscribe)unsubscribe();currentBoleta=null;currentPath=null;if(auth)auth.signOut();backToCards();showView('v-login');document.getElementById('login-input').value='';if(document.getElementById('login-pass'))document.getElementById('login-pass').value='';}
+function logout(){if(unsubscribe)unsubscribe();if(unsubProducts)unsubProducts();currentBoleta=null;currentPath=null;if(auth)auth.signOut();backToCards();showView('v-login');document.getElementById('login-input').value='';if(document.getElementById('login-pass'))document.getElementById('login-pass').value='';}
 function initials(n){return n.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();}
 function fmtDate(d){const[y,m,day]=d.split('-');return`${day}/${m}/${y}`;}
 function pillCls(p){return p>0?'p-pos':p<0?'p-neg':'p-zero';}
@@ -568,10 +902,11 @@ function histItemHtml(m,showName=false){
   const gbg=m.grade==='A'?'var(--green-l)':m.grade==='B'?'var(--blue-l)':'var(--amber-l)';
   const gtx=m.grade==='A'?'var(--green-d)':m.grade==='B'?'var(--blue)':'var(--amber)';
   const nameRow=showName?`${m.name.split(' ').slice(0,2).join(' ')} · `:'';
+  const autoTag=m.auto?`<span style="font-size:10px;padding:1px 6px;border-radius:99px;background:var(--blue-l);color:var(--blue);margin-left:4px">Auto</span>`:'';
   return`<div class="hist-item">
     <div class="hist-dot" style="background:${col}"></div>
     <div style="flex:1;min-width:0">
-      <div style="font-size:13.5px">${nameRow}<span style="font-size:10px;padding:1px 6px;border-radius:99px;background:${gbg};color:${gtx}">Grado ${m.grade}</span></div>
+      <div style="font-size:13.5px">${nameRow}<span style="font-size:10px;padding:1px 6px;border-radius:99px;background:${gbg};color:${gtx}">Grado ${m.grade}</span>${autoTag}</div>
       <div class="hist-meta">${m.desc} · ${fmtDate(m.date)}</div>
     </div>
     <span class="pill ${pillCls(m.delta)}">${m.delta>0?'+':''}${m.delta}</span>
@@ -585,14 +920,14 @@ function pdfHeader(doc,title){
   const fecha=new Date().toLocaleDateString('es-MX',{day:'2-digit',month:'long',year:'numeric'});
   doc.setFillColor(45,106,79);doc.rect(0,0,210,28,'F');
   doc.setTextColor(255,255,255);doc.setFontSize(14);doc.setFont('helvetica','bold');
-  doc.text('Proyecto Trueque — Grupo 2GM1',14,11);
+  doc.text('Círculo Cero — Grupo 2GM1',14,11);
   doc.setFontSize(9);doc.setFont('helvetica','normal');
   doc.text(title,14,18);doc.text(`Generado: ${fecha}`,196,18,{align:'right'});
   doc.setTextColor(0,0,0);return 35;
 }
 function pdfFooter(doc){
   const n=doc.internal.getNumberOfPages();
-  for(let i=1;i<=n;i++){doc.setPage(i);doc.setFontSize(8);doc.setTextColor(150,150,150);doc.text(`Página ${i} de ${n} — Proyecto Trueque 2GM1`,105,290,{align:'center'});}
+  for(let i=1;i<=n;i++){doc.setPage(i);doc.setFontSize(8);doc.setTextColor(150,150,150);doc.text(`Página ${i} de ${n} — Círculo Cero 2GM1`,105,290,{align:'center'});}
 }
 function sortedStudents(){return[...STUDENTS].sort((a,b)=>points[b[0]]-points[a[0]]);}
 
@@ -601,14 +936,12 @@ function pdfAlumno(){
   const[name,team]=ROSTER[currentBoleta];
   const{jsPDF}=window.jspdf;const doc=new jsPDF();
   const fecha=new Date().toLocaleDateString('es-MX',{day:'2-digit',month:'long',year:'numeric'});
-
   doc.setFillColor(45,106,79);doc.rect(0,0,210,40,'F');
   doc.setTextColor(255,255,255);doc.setFontSize(16);doc.setFont('helvetica','bold');
   doc.text('Constancia de Participación',105,16,{align:'center'});
   doc.setFontSize(10);doc.setFont('helvetica','normal');
-  doc.text('Proyecto Trueque — Sustentabilidad 2GM1 · Ciclo 2025–2026',105,26,{align:'center'});
+  doc.text('Círculo Cero — Sustentabilidad 2GM1 · Ciclo 2025–2026',105,26,{align:'center'});
   doc.text(`Generado: ${fecha}`,105,33,{align:'center'});
-
   let y=52;
   doc.setTextColor(0,0,0);doc.setFontSize(13);doc.setFont('helvetica','bold');
   doc.text('Datos del alumno',14,y);y+=8;
@@ -616,33 +949,38 @@ function pdfAlumno(){
   doc.text(`Nombre: ${name}`,14,y);y+=6;
   doc.text(`Boleta: ${currentBoleta}`,14,y);y+=6;
   doc.text(`Equipo: ${team} — ${TEAM_TOPICS[team]||''}`,14,y);y+=6;
-
   const p=points[name];
   const mine=history.filter(m=>m.name===name);
   const pos=mine.filter(m=>m.sign==='+').reduce((s,m)=>s+m.delta,0);
   const neg=mine.filter(m=>m.sign==='-').reduce((s,m)=>s+m.delta,0);
-
+  const myProducts=allProducts.filter(pr=>pr.ownerName===name&&pr.status==='approved');
   y+=6;
   doc.setFontSize(13);doc.setFont('helvetica','bold');doc.text('Resumen de puntos',14,y);y+=8;
   doc.autoTable({startY:y,head:[['Concepto','Valor']],
-    body:[['Puntos ganados',(pos>0?'+':'')+pos],['Puntos descontados',neg],['Saldo neto',(p>0?'+':'')+p],['Total de movimientos',mine.length]],
+    body:[['Puntos ganados',(pos>0?'+':'')+pos],['Puntos descontados',neg],['Saldo neto',(p>0?'+':'')+p],['Total de movimientos',mine.length],['Artículos aprobados',myProducts.length]],
     styles:{fontSize:10,cellPadding:4},headStyles:{fillColor:[45,106,79],textColor:255,fontStyle:'bold'},
     columnStyles:{0:{cellWidth:120},1:{cellWidth:50,halign:'center'}},
     didParseCell:data=>{if(data.column.index===1&&data.section==='body'&&data.row.index===2){const v=parseFloat(data.cell.raw);data.cell.styles.textColor=v>=0?[27,67,50]:[155,35,53];data.cell.styles.fontStyle='bold';}}
   });
-
   y=doc.lastAutoTable.finalY+12;
   const achs=getAchievements(name).filter(a=>a.unlocked);
   if(achs.length){
     doc.setFontSize(13);doc.setFont('helvetica','bold');doc.setTextColor(0,0,0);doc.text('Logros obtenidos',14,y);y+=8;
     doc.autoTable({startY:y,head:[['Logro','Descripción']],
-      body:achs.map(a=>[a.name, a.desc]),
+      body:achs.map(a=>[a.name,a.desc]),
       styles:{fontSize:9,cellPadding:3},headStyles:{fillColor:[45,106,79],textColor:255,fontStyle:'bold'},
       alternateRowStyles:{fillColor:[245,242,236]},
-    });
-    y=doc.lastAutoTable.finalY+12;
+    });y=doc.lastAutoTable.finalY+12;
   }
-
+  if(myProducts.length){
+    doc.setFontSize(13);doc.setFont('helvetica','bold');doc.setTextColor(0,0,0);doc.text('Artículos aprobados',14,y);y+=8;
+    doc.autoTable({startY:y,head:[['Artículo','Tipo','Cat.','Puntos']],
+      body:myProducts.map(pr=>[pr.title,pr.type,'Cat. '+pr.category,'+'+pr.pointsAwarded]),
+      styles:{fontSize:9,cellPadding:3},headStyles:{fillColor:[45,106,79],textColor:255,fontStyle:'bold'},
+      alternateRowStyles:{fillColor:[245,242,236]},
+      columnStyles:{2:{halign:'center'},3:{halign:'center'}},
+    });y=doc.lastAutoTable.finalY+12;
+  }
   if(mine.length){
     doc.setFontSize(13);doc.setFont('helvetica','bold');doc.setTextColor(0,0,0);doc.text('Historial de movimientos',14,y);y+=8;
     doc.autoTable({startY:y,head:[['Fecha','Grado','Acción','Pts','Descripción']],
@@ -653,7 +991,6 @@ function pdfAlumno(){
       didParseCell:data=>{if(data.column.index===3&&data.section==='body'){const v=parseFloat(data.cell.raw);if(v>0)data.cell.styles.textColor=[27,67,50];else if(v<0)data.cell.styles.textColor=[155,35,53];}}
     });
   }
-
   const totalPages=doc.internal.getNumberOfPages();
   for(let i=1;i<=totalPages;i++){doc.setPage(i);doc.setFontSize(8);doc.setTextColor(150,150,150);doc.text(`Página ${i} de ${totalPages} — Constancia de ${name}`,105,290,{align:'center'});}
   doc.save(`constancia_${name.split(' ')[0]}_${name.split(' ')[1]||''}.pdf`);
@@ -732,8 +1069,54 @@ function pdfAlertas(){
   if(zero.length){doc.autoTable({startY:y,head:[['Nombre','Equipo']],body:zero.map(([n,t])=>[n,t]),styles:{fontSize:8.5,cellPadding:3},headStyles:{fillColor:[120,120,120],textColor:255,fontStyle:'bold'},alternateRowStyles:{fillColor:[245,242,236]}});}
   pdfFooter(doc);doc.save('2GM1_alertas.pdf');
 }
+/* ══════════════════════════════════════════
+   STUDENT TABLON
+   ══════════════════════════════════════════ */
+let stuTablonFilterState='';
+
+function filterStuTablon(val, el){
+  stuTablonFilterState=val;
+  document.querySelectorAll('#stu-tablon-filters .filter-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  renderStuTablon();
+}
+
+function renderStuTablon(){
+  const el = document.getElementById('stu-tablon-grid');
+  if(!el) return;
+  
+  const approved = allProducts.filter(p => p.status === 'approved');
+  const filtered = stuTablonFilterState === '' ? approved :
+    approved.filter(p => p.category === stuTablonFilterState || p.type === stuTablonFilterState);
+
+  if(!filtered.length){
+    el.innerHTML = '<div class="empty" style="grid-column:1/-1">No hay artículos disponibles con este filtro</div>';
+    return;
+  }
+
+  const catColors={A:'var(--green-l)',B:'var(--blue-l)',C:'var(--amber-l)'};
+  const catText={A:'var(--green-d)',B:'var(--blue)',C:'var(--amber)'};
+
+  el.innerHTML = filtered.map(p => {
+    const imgHtml = p.photos && p.photos.length ?
+      `<img src="${p.photos[0]}" class="tablon-img" loading="lazy">` :
+      `<div class="tablon-img-placeholder">${TYPE_ICONS[p.type]||'📦'}</div>`;
+    return `<div class="tablon-card">
+      ${imgHtml}
+      <div class="tablon-body">
+        <div class="tablon-title">${p.title}</div>
+        <div class="tablon-meta">
+          <span style="padding:1px 7px;border-radius:99px;font-size:10px;font-weight:500;background:${catColors[p.category]};color:${catText[p.category]}">Cat. ${p.category}</span>
+          <span>${TYPE_ICONS[p.type]||''} ${p.type}</span>
+        </div>
+        <div style="font-size:11px;color:var(--hint);margin-top:4px">${p.ownerName.split(' ').slice(0,2).join(' ')} · ${p.ownerTeam}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
 
 /* ══ INIT ══ */
 initTheme();
 initFirebase();
+subscribeToProducts(()=>{renderPublic();});
 subscribeToData(()=>{renderPublic();});

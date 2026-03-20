@@ -3,12 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Trueque 2GM1</title>
+<title>Círculo Cero — 2GM1</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
@@ -16,7 +17,6 @@
 <body>
 
 <button class="dark-toggle" id="dark-btn" onclick="toggleDark()" title="Modo oscuro">🌙</button>
-
 <div class="db-status" id="db-status">
   <span class="db-dot" id="db-dot"></span>
   <span id="db-label">Conectando...</span>
@@ -25,22 +25,40 @@
 <!-- ═══════════ PUBLIC LANDING ═══════════ -->
 <div id="v-public" class="view on" style="flex-direction:column">
   <div class="pub-hero">
-    <h1>Trueque<br>Grupo 2GM1</h1>
-    <p>Proyecto de Sustentabilidad · Ciclo 2025–2026</p>
+    <h1>Círculo Cero<br>Grupo 2GM1</h1>
+    <p>Plataforma de trueque sustentable · Ciclo 2025–2026</p>
     <button class="pub-cta" onclick="goToLogin()">Ver mis puntos →</button>
   </div>
   <div class="pub-body">
     <div class="pub-stats">
       <div class="pub-stat"><div class="n" id="pub-total-pts">—</div><div class="l">puntos en el grupo</div></div>
       <div class="pub-stat"><div class="n" id="pub-moves">—</div><div class="l">movimientos registrados</div></div>
-      <div class="pub-stat"><div class="n" id="pub-active">—</div><div class="l">alumnos activos</div></div>
+      <div class="pub-stat"><div class="n" id="pub-products">—</div><div class="l">artículos disponibles</div></div>
     </div>
+
     <div class="pub-section">Podio actual</div>
     <div class="pub-podium" id="pub-podium">
       <div class="podium-card"><div class="podium-medal">🥈</div><div class="podium-name">—</div><div class="podium-team">—</div><div class="podium-pts">—</div></div>
       <div class="podium-card first"><div class="podium-medal">🥇</div><div class="podium-name">—</div><div class="podium-team">—</div><div class="podium-pts">—</div></div>
       <div class="podium-card"><div class="podium-medal">🥉</div><div class="podium-name">—</div><div class="podium-team">—</div><div class="podium-pts">—</div></div>
     </div>
+
+    <div class="pub-section">Tablón — artículos disponibles</div>
+    <div class="tablon-filters" id="tablon-filters">
+      <button class="filter-chip active" onclick="filterTablon('',this)">Todos</button>
+      <button class="filter-chip" onclick="filterTablon('A',this)">Cat. A</button>
+      <button class="filter-chip" onclick="filterTablon('B',this)">Cat. B</button>
+      <button class="filter-chip" onclick="filterTablon('C',this)">Cat. C</button>
+      <button class="filter-chip" onclick="filterTablon('Ropa',this)">Ropa</button>
+      <button class="filter-chip" onclick="filterTablon('Libros',this)">Libros</button>
+      <button class="filter-chip" onclick="filterTablon('Joyería',this)">Joyería</button>
+      <button class="filter-chip" onclick="filterTablon('Electrónicos',this)">Electrónicos</button>
+      <button class="filter-chip" onclick="filterTablon('Otro',this)">Otro</button>
+    </div>
+    <div class="tablon-grid" id="pub-tablon">
+      <div class="empty" style="grid-column:1/-1">Cargando artículos...</div>
+    </div>
+
     <div class="pub-section">Equipos</div>
     <div class="team-grid" id="pub-teams"></div>
   </div>
@@ -49,14 +67,14 @@
 <!-- ═══════════ LOGIN ═══════════ -->
 <div id="v-login" class="view" style="flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:2rem">
   <div class="login-logo">
-    <h1>Trueque<br>Grupo 2GM1<br>Equipo 7</h1>
+    <h1>Círculo Cero<br>Grupo 2GM1</h1>
     <p>Ciclo Escolar 2025–2026</p>
   </div>
   <div class="login-cards" id="login-cards">
     <div class="login-card" id="card-stu" onclick="choosePath('stu')">
       <div class="login-card-icon">🎒</div>
       <h2>Soy alumno</h2>
-      <p>Consulta tus puntos con tu número de boleta</p>
+      <p>Accede con tu número de boleta</p>
     </div>
     <div class="login-card" id="card-adm" onclick="choosePath('adm')">
       <div class="login-card-icon">🔑</div>
@@ -68,12 +86,6 @@
       <label id="login-label">Número de boleta</label>
       <input id="login-input" type="text" placeholder="Ej: 2026401475" autocomplete="off">
     </div>
-    <!-- Campo extra solo para admin (email) -->
-    <div class="login-input-wrap" id="login-email-wrap" style="display:none;margin-top:-4px">
-      <label>Correo administrador</label>
-      <input id="login-email" type="email" placeholder="correo@paletash.com" autocomplete="email">
-    </div>
-    <!-- Contraseña admin -->
     <div class="login-input-wrap" id="login-pass-wrap" style="display:none;margin-top:-4px">
       <label>Contraseña</label>
       <input id="login-pass" type="password" placeholder="••••••••••" autocomplete="current-password">
@@ -82,15 +94,17 @@
     <button class="btn-primary" id="login-btn" onclick="doLogin()">Entrar</button>
     <button class="btn-back" onclick="backToCards()">← Volver</button>
   </div>
-  <button class="btn-pub" onclick="showView('v-public')" style="margin-top:1.5rem">Ver página pública del proyecto</button>
+  <button class="btn-pub" onclick="showView('v-public')" style="margin-top:1.5rem">Ver tablón público</button>
 </div>
 
 <!-- ═══════════ STUDENT VIEW ═══════════ -->
 <div id="v-stu" class="view" style="flex-direction:column">
   <div class="m-nav" id="stu-mnav">
     <button class="active" onclick="stuTab('mis',this)">Mis puntos</button>
+    <button onclick="stuTab('articulos',this)">Mis artículos</button>
+    <button onclick="stuTab('tablon',this)">Tablón</button>
     <button onclick="stuTab('logros',this)">Logros</button>
-    <button onclick="stuTab('equipo',this)">Mi equipo</button>
+    <button onclick="stuTab('equipo',this)">Equipo</button>
     <button onclick="stuTab('ranking',this)">Ranking</button>
     <button onclick="stuTab('opciones',this)">Opciones</button>
   </div>
@@ -105,6 +119,14 @@
         <a class="active" onclick="stuTab('mis',this)">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
           Mis puntos
+        </a>
+        <a onclick="stuTab('articulos',this)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+          Mis artículos
+        </a>
+        <a onclick="stuTab('tablon',this)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+        Tablón de Trueques
         </a>
         <a onclick="stuTab('logros',this)">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="6"/><path d="M9 14l-4 7h14l-4-7"/></svg>
@@ -131,50 +153,134 @@
       </div>
     </aside>
     <main>
+      <!-- MIS PUNTOS -->
       <div id="stu-mis" class="page on">
         <p class="page-title" id="stu-title">Mis puntos</p>
-        <div class="card" style="margin-bottom:1rem">
-          <div class="pts-hero" id="stu-hero"></div>
-        </div>
+        <div class="card"><div class="pts-hero" id="stu-hero"></div></div>
         <div class="card">
           <div class="card-title">Progreso semanal</div>
           <div class="chart-wrap" style="height:180px"><canvas id="chart-stu-weekly"></canvas></div>
         </div>
         <div class="card"><div class="card-title">Mis movimientos</div><div id="stu-hist"></div></div>
       </div>
+
+      <!-- MIS ARTÍCULOS -->
+      <div id="stu-articulos" class="page">
+        <p class="page-title">Mis artículos</p>
+        <!-- Formulario nuevo artículo -->
+        <div class="card">
+          <div class="card-title">Registrar nuevo artículo</div>
+          <div id="art-toast" class="toast"></div>
+          <div class="fg two">
+            <div>
+              <label>Nombre del artículo</label>
+              <input type="text" id="art-title" placeholder="Ej: Sudadera Nike talla M">
+            </div>
+            <div>
+              <label>Tipo</label>
+              <select id="art-type">
+                <option value="">Selecciona...</option>
+                <option>Ropa</option>
+                <option>Libros</option>
+                <option>Joyería</option>
+                <option>Electrónicos</option>
+                <option>Juguetes</option>
+                <option>Hogar</option>
+                <option>Deportes</option>
+                <option>Arte</option>
+                <option>Otro</option>
+              </select>
+            </div>
+          </div>
+          <div class="fg">
+            <div>
+              <label>Categoría</label>
+              <div class="grade-btns">
+                <div class="gb" id="art-gb-A" onclick="selectArtCat('A')">A<sub>Impecable · 3 pts</sub></div>
+                <div class="gb" id="art-gb-B" onclick="selectArtCat('B')">B<sub>Buen uso · 2 pts</sub></div>
+                <div class="gb" id="art-gb-C" onclick="selectArtCat('C')">C<sub>Con uso · 1 pt</sub></div>
+              </div>
+            </div>
+          </div>
+          <div class="fg">
+            <div>
+              <label>Descripción y estado de conservación</label>
+              <textarea id="art-desc" placeholder="Describe el artículo, su estado, medidas si aplica, etc."></textarea>
+            </div>
+          </div>
+          <div class="fg">
+            <div>
+              <label>Fotografías (mín. 1, máx. 4)</label>
+              <div class="photo-upload-area" onclick="document.getElementById('art-photos').click()">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                <p>Toca para seleccionar fotos</p>
+                <input type="file" id="art-photos" accept="image/*" multiple onchange="previewPhotos(this)">
+              </div>
+              <div class="photo-previews" id="art-previews"></div>
+              <div class="upload-progress" id="upload-progress">
+                <div class="upload-progress-bar" id="upload-progress-bar" style="width:0%"></div>
+              </div>
+            </div>
+          </div>
+          <button class="submit-btn" id="art-submit-btn" onclick="submitArticulo()">Enviar para revisión</button>
+        </div>
+
+        <!-- Lista de mis artículos -->
+        <div class="card">
+          <div class="card-title">Mis envíos</div>
+          <div id="stu-mis-articulos"><div class="loading">Cargando...</div></div>
+        </div>
+      </div>
+      <!-- TABLON -->
+       <div id="stu-tablon" class="page">
+        <p class="page-title">Tablón de Trueques</p>
+        <div class="tablon-filters" id="stu-tablon-filters">
+          <button class="filter-chip active" onclick="filterStuTablon('',this)">Todos</button>
+          <button class="filter-chip" onclick="filterStuTablon('A',this)">Cat. A</button>
+          <button class="filter-chip" onclick="filterStuTablon('B',this)">Cat. B</button>
+          <button class="filter-chip" onclick="filterStuTablon('C',this)">Cat. C</button>
+          <button class="filter-chip" onclick="filterStuTablon('Ropa',this)">Ropa</button>
+          <button class="filter-chip" onclick="filterStuTablon('Libros',this)">Libros</button>
+        </div>
+        <div class="tablon-grid" id="stu-tablon-grid">
+          <div class="empty" style="grid-column:1/-1">Cargando artículos...</div>
+        </div>
+      </div>
+      <!-- LOGROS -->
       <div id="stu-logros" class="page">
         <p class="page-title">Mis logros</p>
         <div id="stu-achievements"></div>
       </div>
+
+      <!-- MI EQUIPO -->
       <div id="stu-equipo" class="page">
         <p class="page-title">Mi equipo</p>
         <div class="card" id="stu-team-card"></div>
         <div class="card"><div class="card-title" id="stu-team-title"></div><div id="stu-team-list"></div></div>
       </div>
+
+      <!-- RANKING -->
       <div id="stu-ranking" class="page">
         <p class="page-title">Ranking general</p>
         <div class="card"><div id="stu-rank-list"></div></div>
       </div>
-      <!-- MÓVIL: opciones del alumno -->
+
+      <!-- OPCIONES (móvil) -->
       <div id="stu-opciones" class="page">
         <p class="page-title">Opciones</p>
         <div class="card">
           <div class="card-title">Mi constancia</div>
-          <div style="display:flex;flex-direction:column;gap:8px">
-            <button class="btn-sm" onclick="pdfAlumno()">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-              Descargar constancia PDF
-            </button>
-          </div>
+          <button class="btn-sm" onclick="pdfAlumno()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            Descargar constancia PDF
+          </button>
         </div>
         <div class="card">
           <div class="card-title">Sesión</div>
-          <div style="display:flex;flex-direction:column;gap:8px">
-            <button class="btn-sm btn-logout" onclick="logout()">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-              Cerrar sesión
-            </button>
-          </div>
+          <button class="btn-sm btn-logout" onclick="logout()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            Cerrar sesión
+          </button>
         </div>
       </div>
     </main>
@@ -185,6 +291,7 @@
 <div id="v-adm" class="view" style="flex-direction:column">
   <div class="m-nav" id="adm-mnav">
     <button class="active" onclick="admTab('dash',this)">Resumen</button>
+    <button onclick="admTab('catalogo',this)">Catálogo <span class="badge-count" id="adm-badge-cat" style="display:none">0</span></button>
     <button onclick="admTab('reg',this)">Registrar</button>
     <button onclick="admTab('rank',this)">Ranking</button>
     <button onclick="admTab('equipos',this)">Equipos</button>
@@ -195,7 +302,7 @@
   <div style="display:flex;flex:1;min-height:100vh">
     <aside>
       <div class="logo">
-        <h1>Trueque<br>2GM1</h1>
+        <h1>Círculo Cero<br>2GM1</h1>
         <div class="who">Administrador</div>
       </div>
       <div class="nav-sec">Panel</div>
@@ -203,6 +310,11 @@
         <a class="active" onclick="admTab('dash',this)">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
           Resumen
+        </a>
+        <a onclick="admTab('catalogo',this)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+          Catálogo
+          <span class="badge-count" id="adm-badge-cat2" style="display:none">0</span>
         </a>
         <a onclick="admTab('reg',this)">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
@@ -268,7 +380,18 @@
         <div class="card"><div class="card-title">Últimos movimientos</div><div id="adm-recent"><div class="loading">Cargando...</div></div></div>
       </div>
 
-      <!-- REGISTRAR -->
+      <!-- CATÁLOGO -->
+      <div id="adm-catalogo" class="page">
+        <p class="page-title">Curaduría de artículos</p>
+        <div class="review-tabs">
+          <button class="review-tab active" onclick="switchReviewTab('pending',this)">Pendientes <span id="tab-count-pending" class="badge-count" style="display:inline;background:var(--amber)">0</span></button>
+          <button class="review-tab" onclick="switchReviewTab('approved',this)">Aprobados</button>
+          <button class="review-tab" onclick="switchReviewTab('rejected',this)">Rechazados</button>
+        </div>
+        <div id="catalogo-list"><div class="loading">Cargando...</div></div>
+      </div>
+
+      <!-- REGISTRAR PUNTOS -->
       <div id="adm-reg" class="page">
         <p class="page-title">Registrar movimiento</p>
         <div class="card">
@@ -378,12 +501,10 @@
         </div>
         <div class="card">
           <div class="card-title">Sesión</div>
-          <div style="display:flex;flex-direction:column;gap:8px">
-            <button class="btn-sm btn-logout" onclick="logout()">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-              Cerrar sesión
-            </button>
-          </div>
+          <button class="btn-sm btn-logout" onclick="logout()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            Cerrar sesión
+          </button>
         </div>
       </div>
 
