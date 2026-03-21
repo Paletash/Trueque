@@ -483,25 +483,34 @@ function filterTablon(val, el){
 
 function renderTablon(){
   const available = allProducts.filter(p => p.status === 'approved' || p.status === 'traded');
-const filtered = tablonFilterState === '' ? available :
-  available.filter(p => p.category === tablonFilterState || p.type === tablonFilterState);
+  const filtered = tablonFilterState === '' ? available :
+    available.filter(p => p.category === tablonFilterState || p.type === tablonFilterState);
 
   document.getElementById('pub-products').textContent = allProducts.filter(p => p.status === 'approved').length;
 
-  const el=document.getElementById('pub-tablon');
+  const el = document.getElementById('pub-tablon');
   if(!filtered.length){
-    el.innerHTML='<div class="empty" style="grid-column:1/-1">No hay artículos disponibles en esta categoría</div>';
+    el.innerHTML = '<div class="empty" style="grid-column:1/-1">No hay artículos disponibles en esta categoría</div>';
     return;
   }
 
   const catColors={A:'var(--green-l)',B:'var(--blue-l)',C:'var(--amber-l)'};
   const catText={A:'var(--green-d)',B:'var(--blue)',C:'var(--amber)'};
 
-  el.innerHTML=filtered.map(p=>{
-    const imgHtml=p.photos&&p.photos.length?
-      `<img src="${p.photos[0]}" class="tablon-img" loading="lazy">`:
+  el.innerHTML = filtered.map(p => {
+    const imgHtml = p.photos && p.photos.length ?
+      `<img src="${p.photos[0]}" class="tablon-img" loading="lazy">` :
       `<div class="tablon-img-placeholder">${TYPE_ICONS[p.type]||'📦'}</div>`;
-    return`<div class="tablon-card">
+
+    const tradedBadge = p.status === 'traded'
+      ? `<div style="position:absolute;top:8px;left:8px;background:rgba(155,35,53,0.9);
+          color:#fff;font-size:10px;font-weight:500;padding:2px 8px;border-radius:99px">
+          No disponible
+        </div>`
+      : '';
+
+    return `<div class="tablon-card" style="position:relative">
+      ${tradedBadge}
       ${imgHtml}
       <div class="tablon-body">
         <div class="tablon-title">${p.title}</div>
