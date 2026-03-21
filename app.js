@@ -1180,8 +1180,8 @@ function openArtModal(id){
   const catText   = {A:'var(--green-d)', B:'var(--blue)',   C:'var(--amber)'};
 
   const photosHtml = p.photos && p.photos.length
-    ? p.photos.map(url => `<img src="${url}" loading="lazy">`).join('')
-    : `<div style="width:100%;height:280px;display:flex;align-items:center;justify-content:center;font-size:48px;background:var(--bg)">${TYPE_ICONS[p.type]||'📦'}</div>`;
+  ? p.photos.map((url, i) => `<img id="modal-img-${i}" src="${url}" loading="lazy" crossorigin="anonymous">`).join('')
+  : `<div style="width:100%;height:280px;display:flex;align-items:center;justify-content:center;font-size:48px;background:var(--bg)">${TYPE_ICONS[p.type]||'📦'}</div>`;
 
   const ownerInitials = p.ownerName.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();
 
@@ -1310,6 +1310,7 @@ async function canjearArticulo(productId){
       productType: p.type,
       productCategory: p.category,
       productPhoto: p.photos?.[0] || '',
+      productPhotos: p.photos || [],
       ownerName: p.ownerName,
       ownerBoleta: p.ownerBoleta,
       ownerTeam: p.ownerTeam,
@@ -1323,6 +1324,21 @@ async function canjearArticulo(productId){
 
     await batch.commit();
 
+    // Capturar imágenes ya cargadas del modal
+    const photoBase64s = [];
+    for(let i = 0; i < (p.photos||[]).length; i++){
+      const imgEl = document.getElementById(`modal-img-${i}`);
+      if(imgEl && imgEl.complete){
+        try{
+          const canvas = document.createElement('canvas');
+          canvas.width = imgEl.naturalWidth;
+          canvas.height = imgEl.naturalHeight;
+          canvas.getContext('2d').drawImage(imgEl, 0, 0);
+          photoBase64s.push(canvas.toDataURL('image/jpeg', 0.85));
+        }catch(e){ console.warn('No se pudo convertir imagen', i, e); }
+      }
+    }
+
     // Cerrar modal y mostrar comprobante
     closeArtModal();
     const exchData = {
@@ -1330,6 +1346,8 @@ async function canjearArticulo(productId){
       productType: p.type,
       productCategory: p.category,
       productPhoto: p.photos?.[0] || '',
+      productPhotos: p.photos || [],
+      productPhotosB64: photoBase64s,
       ownerName: p.ownerName,
       ownerTeam: p.ownerTeam,
       buyerName: myName,
@@ -1435,7 +1453,7 @@ function showComprobante(exch){
   document.body.appendChild(overlay);
 }
 
-function pdfComprobante(exch){
+async function pdfComprobante(exch){
   const{jsPDF}=window.jspdf;
   const doc=new jsPDF();
   const fecha=new Date(exch.ts).toLocaleDateString('es-MX',{day:'2-digit',month:'long',year:'numeric'});
@@ -1453,19 +1471,49 @@ function pdfComprobante(exch){
   let y=52;
   doc.setTextColor(0,0,0);
 
+  // Imágenes del artículo
+const photos = exch.productPhotosB64 && exch.productPhotosB64.length
+  ? exch.productPhotosB64
+  : [];
+
+if(photos.length){
+  doc.setFontSize(13);doc.setFont('helvetica','bold');doc.setTextColor(0,0,0);
+  doc.text('Fotografías del artículo',14,y);y+=8;
+  const imgSize=55, gap=8;
+  let x=14;
+  let maxH=0;
+  for(const b64 of photos.slice(0,4)){
+    if(b64){
+      const tmpImg=new Image();
+      tmpImg.src=b64;
+      const ratio=tmpImg.naturalHeight>0&&tmpImg.naturalWidth>0
+        ? tmpImg.naturalHeight/tmpImg.naturalWidth : 1;
+      const imgW=imgSize;
+      const imgH=imgSize*ratio;
+      doc.addImage(b64,'JPEG',x,y,imgW,imgH);
+      x+=imgW+gap;
+      if(imgH>maxH)maxH=imgH;
+    }
+  }
+  y+=maxH+12;
+}
+
   // Artículo
-  doc.setFontSize(13);doc.setFont('helvetica','bold');
+  doc.setFontSize(13);doc.setFont('helvetica','bold');doc.setTextColor(0,0,0);
   doc.text('Artículo intercambiado',14,y);y+=8;
-  doc.autoTable({startY:y,
-    body:[
-      ['Nombre',exch.productTitle],
-      ['Tipo',exch.productType],
-      ['Categoría','Cat. '+exch.productCategory+' ('+exch.pointsCost+' pts)'],
-    ],
-    styles:{fontSize:10,cellPadding:4},
-    columnStyles:{0:{cellWidth:50,fontStyle:'bold',fillColor:[245,242,236]},1:{cellWidth:130}},
-    theme:'grid'
-  });
+doc.autoTable({startY:y,
+  body:[
+    ['Cedente (entrega)',exch.ownerName,exch.ownerTeam],
+    ['Receptor (recibe)',exch.buyerName,exch.buyerTeam],
+  ],
+  styles:{fontSize:10,cellPadding:4},
+  columnStyles:{
+    0:{cellWidth:45,fontStyle:'bold',fillColor:[245,242,236]},
+    1:{cellWidth:95},
+    2:{cellWidth:36}
+  },
+  theme:'grid'
+});
 
   y=doc.lastAutoTable.finalY+12;
   doc.setFontSize(13);doc.setFont('helvetica','bold');doc.setTextColor(0,0,0);
@@ -1496,7 +1544,7 @@ function pdfComprobante(exch){
     didParseCell:data=>{if(data.column.index===1&&data.row.index===0)data.cell.styles.textColor=[155,35,53];}
   });
 
-  // Firma
+  // Firmas
   y=doc.lastAutoTable.finalY+20;
   doc.setDrawColor(200,200,200);
   doc.line(14,y,96,y);doc.line(114,y,196,y);
@@ -1513,7 +1561,6 @@ function pdfComprobante(exch){
 
   doc.save(`trueque_${exch.folio}.pdf`);
 }
-
 /*══ INIT ══ */
 initTheme();
 initFirebase();
