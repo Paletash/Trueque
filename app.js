@@ -111,6 +111,10 @@ function getMedals(name) {
 /* ══════════════════════════════════════════
    STATE
    ══════════════════════════════════════════ */
+   function getBoleta(name){
+  const entry = Object.entries(ROSTER).find(([b,[n]])=>n===name);
+  return entry ? entry[0] : 'unknown';
+}
 const GRADES = {A:3,B:2,C:1};
 const STUDENTS = Object.entries(ROSTER).map(([b,[n,t]])=>[n,t,b]);
 let db, auth, storage;
@@ -425,51 +429,36 @@ function hideRejectForm(id){
   document.getElementById(`reject-form-${id}`).style.display='none';
 }
 
-async function confirmApprove(productId, ownerName, originalCategory) {
-  // 1. Leer la categoría final que eligió el administrador
-  const catSelect = document.getElementById(`approve-cat-${productId}`).value;
-  const pts = GRADES[catSelect]; 
-  
-  // 2. Lógica del comentario automático
-  let autoComment = '';
-  if (catSelect !== originalCategory) {
-    autoComment = `La administración ajustó la categoría de ${originalCategory} a ${catSelect} tras la revisión del artículo.`;
+async function confirmApprove(productId, ownerName, originalCategory){
+  const catSelect=document.getElementById(`approve-cat-${productId}`).value;
+  const pts=GRADES[catSelect];
+  let autoComment='';
+  if(catSelect!==originalCategory){
+    autoComment=`La administración ajustó la categoría de ${originalCategory} a ${catSelect} tras la revisión del artículo.`;
   }
-  
-  try {
-    const batch = db.batch();
-    
-    // 3. Actualizar el producto en Firestore
+  const ownerBoleta=getBoleta(ownerName);
+  try{
+    const batch=db.batch();
     batch.update(db.collection('products').doc(productId), {
-      status: 'approved', 
-      category: catSelect, 
-      pointsAwarded: pts, 
-      reviewedTs: Date.now(), 
-      adminComment: autoComment // <-- Se guarda el comentario si hubo un cambio
+      status:'approved', category:catSelect, pointsAwarded:pts, reviewedTs:Date.now(), adminComment:autoComment
     });
-    
-    // 4. Crear el movimiento en el historial
-    const movRef = db.collection('movements').doc();
+    const movRef=db.collection('movements').doc(ownerBoleta).collection('movementItems').doc();
     batch.set(movRef, {
-      name: ownerName, 
-      grade: catSelect, 
-      sign: '+', 
-      delta: pts,
-      date: new Date().toISOString().slice(0,10),
-      desc: `Artículo aprobado (Cat. ${catSelect})`,
-      ts: Date.now(), 
-      auto: true
-    });
-    
+  name:ownerName, boleta:ownerBoleta, grade:catSelect, sign:'+', delta:pts,
+  date:new Date().toISOString().slice(0,10),
+  desc:`Artículo aprobado (Cat. ${catSelect})`,
+  ts:Date.now(), auto:true
+});
     await batch.commit();
-  } catch(e) {
-    alert('Error al aprobar: ' + e.message);
-  }
+  }catch(e){alert('Error al aprobar: '+e.message);}
 }
 
 async function confirmReject(productId){
   const comment=document.getElementById(`reject-comment-${productId}`).value.trim();
   if(!comment){alert('Escribe el motivo del rechazo');return;}
+  // Buscar en qué boleta está el producto
+  const prod=allProducts.find(p=>p.id===productId);
+  const boleta=prod?prod.ownerBoleta:'unknown';
   try{
     await db.collection('products').doc(productId).update({
       status:'rejected', adminComment:comment, reviewedTs:Date.now(), pointsAwarded:0
@@ -905,8 +894,11 @@ async function doRegister(){
   const date=document.getElementById('mov-date').value;
   const desc=document.getElementById('mov-desc').value.trim()||`Grado ${selGradeVal}`;
   const delta=GRADES[selGradeVal]*(selSignVal==='+'?1:-1);
+  const boleta=getBoleta(name);
   try{
-    await db.collection('movements').add({name,grade:selGradeVal,sign:selSignVal,delta,date,desc,ts:Date.now()});
+    await db.collection('movements').add({
+  name, boleta:getBoleta(name), grade:selGradeVal, sign:selSignVal, delta, date, desc, ts:Date.now()
+});
     showT(`✓ ${delta>0?'+':''}${delta} pts para ${name.split(' ')[0]}`,true);
     document.getElementById('mov-desc').value='';
   }catch(e){showT('Error al guardar.',false);console.error(e);}
