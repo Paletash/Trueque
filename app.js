@@ -194,7 +194,7 @@ function recalc(){
 /* ══════════════════════════════════════════
    IMAGE COMPRESSION
    ══════════════════════════════════════════ */
-function compressImage(file, maxWidth=900){
+function compressImage(file, maxWidth=600){
   return new Promise(resolve=>{
     const reader=new FileReader();
     reader.onload=e=>{
@@ -205,7 +205,7 @@ function compressImage(file, maxWidth=900){
         if(w>maxWidth){h=Math.round(h*maxWidth/w);w=maxWidth;}
         canvas.width=w;canvas.height=h;
         canvas.getContext('2d').drawImage(img,0,0,w,h);
-        canvas.toBlob(blob=>resolve(new File([blob],file.name,{type:'image/jpeg'})),'image/jpeg',0.82);
+        canvas.toBlob(blob=>resolve(new File([blob],file.name,{type:'image/jpeg'})),'image/jpeg',0.70);
       };
       img.src=e.target.result;
     };
