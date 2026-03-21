@@ -175,10 +175,15 @@ function subscribeToData(cb){
 
 function subscribeToProducts(cb){
   if(unsubProducts)unsubProducts();
+  console.log('subscribeToProducts llamado');
   unsubProducts=db.collection('products').orderBy('ts','desc').onSnapshot(snap=>{
+    console.log('productos recibidos:', snap.docs.length);
     allProducts=snap.docs.map(d=>({id:d.id,...d.data()}));
+    console.log('allProducts:', allProducts);
     cb();
-  },err=>{console.error(err);});
+  },err=>{
+    console.error('ERROR en subscribeToProducts:', err);
+  });
 }
 
 function recalc(){
@@ -442,7 +447,7 @@ async function confirmApprove(productId, ownerName, originalCategory){
     batch.update(db.collection('products').doc(productId), {
       status:'approved', category:catSelect, pointsAwarded:pts, reviewedTs:Date.now(), adminComment:autoComment
     });
-    const movRef=db.collection('movements').doc(ownerBoleta).collection('movementItems').doc();
+    const movRef=db.collection('movements').doc();
     batch.set(movRef, {
   name:ownerName, boleta:ownerBoleta, grade:catSelect, sign:'+', delta:pts,
   date:new Date().toISOString().slice(0,10),
@@ -477,11 +482,11 @@ function filterTablon(val, el){
 }
 
 function renderTablon(){
-  const approved=allProducts.filter(p=>p.status==='approved');
-  const filtered=tablonFilterState===''?approved:
-    approved.filter(p=>p.category===tablonFilterState||p.type===tablonFilterState);
+  const available = allProducts.filter(p => p.status === 'approved' || p.status === 'traded');
+const filtered = tablonFilterState === '' ? available :
+  available.filter(p => p.category === tablonFilterState || p.type === tablonFilterState);
 
-  document.getElementById('pub-products').textContent=approved.length;
+  document.getElementById('pub-products').textContent = allProducts.filter(p => p.status === 'approved').length;
 
   const el=document.getElementById('pub-tablon');
   if(!filtered.length){
@@ -666,8 +671,12 @@ function enterStudentView(){
   document.getElementById('stu-title').textContent='Hola, '+name.split(' ')[0];
   document.getElementById('stu-team-title').textContent=team+' — '+(TEAM_TOPICS[team]||'');
   showView('v-stu');
+  subscribeToProducts(()=>{
+    renderStuTablon();
+    renderStuArticulos(name);
+    renderStuAchievements(name);
+  });
   subscribeToData(()=>{renderStuAll(name,team);});
-  subscribeToProducts(()=>{renderStuAll(name,team);});
 }
 
 function renderStuAll(name,team){
@@ -1109,10 +1118,10 @@ function filterStuTablon(val, el){
 function renderStuTablon(){
   const el = document.getElementById('stu-tablon-grid');
   if(!el) return;
-  
-  const approved = allProducts.filter(p => p.status === 'approved');
-  const filtered = stuTablonFilterState === '' ? approved :
-    approved.filter(p => p.category === stuTablonFilterState || p.type === stuTablonFilterState);
+
+  const available = allProducts.filter(p => p.status === 'approved' || p.status === 'traded');
+  const filtered = stuTablonFilterState === '' ? available :
+    available.filter(p => p.category === stuTablonFilterState || p.type === stuTablonFilterState);
 
   if(!filtered.length){
     el.innerHTML = '<div class="empty" style="grid-column:1/-1">No hay artículos disponibles con este filtro</div>';
@@ -1126,7 +1135,16 @@ function renderStuTablon(){
     const imgHtml = p.photos && p.photos.length ?
       `<img src="${p.photos[0]}" class="tablon-img" loading="lazy">` :
       `<div class="tablon-img-placeholder">${TYPE_ICONS[p.type]||'📦'}</div>`;
-    return `<div class="tablon-card" onclick="openArtModal('${p.id}')">
+
+    const tradedBadge = p.status === 'traded'
+      ? `<div style="position:absolute;top:8px;left:8px;background:rgba(155,35,53,0.9);
+          color:#fff;font-size:10px;font-weight:500;padding:2px 8px;border-radius:99px">
+          No disponible
+        </div>`
+      : '';
+
+    return `<div class="tablon-card" onclick="openArtModal('${p.id}')" style="position:relative">
+      ${tradedBadge}
       ${imgHtml}
       <div class="tablon-body">
         <div class="tablon-title">${p.title}</div>
@@ -1156,6 +1174,39 @@ function openArtModal(id){
 
   const ownerInitials = p.ownerName.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();
 
+  const [myName] = ROSTER[currentBoleta] || ['',''];
+  const myPts = points[myName] || 0;
+  const cost = GRADES[p.category];
+  const isOwner = p.ownerBoleta === currentBoleta;
+  const isTraded = p.status === 'traded';
+  const canAfford = myPts >= cost;
+
+  let tradeBtn = '';
+  if(currentBoleta){
+    if(isOwner){
+      tradeBtn = `<div style="margin-top:1rem;padding:10px 14px;background:var(--bg);border-radius:10px;
+        border:1px solid var(--border);font-size:13px;color:var(--muted);text-align:center">
+        Este es tu artículo
+      </div>`;
+    } else if(isTraded){
+      tradeBtn = `<div style="margin-top:1rem;padding:10px 14px;background:var(--red-l);border-radius:10px;
+        border:1px solid var(--red-l);font-size:13px;color:var(--red-d);text-align:center;font-weight:500">
+        No disponible — ya fue canjeado
+      </div>`;
+    } else if(!canAfford){
+      tradeBtn = `<div style="margin-top:1rem;padding:10px 14px;background:var(--amber-l);border-radius:10px;
+        border:1px solid var(--amber-l);font-size:13px;color:var(--amber);text-align:center">
+        Necesitas ${cost} pts — tienes ${myPts}
+      </div>`;
+    } else {
+      tradeBtn = `<button onclick="canjearArticulo('${p.id}')"
+        style="width:100%;margin-top:1rem;padding:12px;background:#2D6A4F;color:#fff;border:none;
+        border-radius:10px;font-size:14px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif">
+        Canjear por ${cost} punto${cost>1?'s':''} 🔄
+      </button>`;
+    }
+  }
+
   document.getElementById('modal-body').innerHTML = `
     <div class="modal-photos">${photosHtml}</div>
     <div class="modal-info">
@@ -1172,6 +1223,7 @@ function openArtModal(id){
           <div style="font-size:11px;color:var(--muted)">${p.ownerTeam} · ${TEAM_TOPICS[p.ownerTeam]||''}</div>
         </div>
       </div>
+      ${tradeBtn}
     </div>
   `;
 
@@ -1184,6 +1236,273 @@ function closeArtModal(event){
   document.getElementById('art-modal').style.display = 'none';
   document.body.style.overflow = '';
 }
+/* ══════════════════════════════════════════
+   SISTEMA DE TRUEQUES
+   ══════════════════════════════════════════ */
+async function canjearArticulo(productId){
+  const p = allProducts.find(pr => pr.id === productId);
+  if(!p) return;
+
+  const [myName] = ROSTER[currentBoleta];
+  const myPoints = points[myName] || 0;
+  const cost = GRADES[p.category];
+
+  // Validaciones
+  if(p.ownerBoleta === currentBoleta){
+    alert('No puedes canjear tu propio artículo.');
+    return;
+  }
+  if(p.status === 'traded'){
+    alert('Este artículo ya fue canjeado.');
+    return;
+  }
+  if(myPoints < cost){
+    alert(`No tienes suficientes puntos. Necesitas ${cost} pts y tienes ${myPoints}.`);
+    return;
+  }
+
+  const confirmar = confirm(`¿Confirmas el canje de "${p.title}" por ${cost} punto(s)?`);
+  if(!confirmar) return;
+
+  try{
+    const batch = db.batch();
+
+    // 1. Marcar artículo como canjeado
+    batch.update(db.collection('products').doc(productId), {
+      status: 'traded',
+      tradedBy: myName,
+      tradedByBoleta: currentBoleta,
+      tradedTs: Date.now()
+    });
+
+    // 2. Descontar puntos al alumno que canjea
+    const movRef = db.collection('movements').doc();
+    batch.set(movRef, {
+      name: myName,
+      boleta: currentBoleta,
+      grade: p.category,
+      sign: '-',
+      delta: -cost,
+      date: new Date().toISOString().slice(0,10),
+      desc: `Trueque: ${p.title} (${p.ownerName.split(' ')[0]})`,
+      ts: Date.now(),
+      auto: true,
+      trueque: true,
+      productId
+    });
+
+    // 3. Registrar el intercambio
+    const exchRef = db.collection('exchanges').doc();
+    batch.set(exchRef, {
+      productId,
+      productTitle: p.title,
+      productType: p.type,
+      productCategory: p.category,
+      productPhoto: p.photos?.[0] || '',
+      ownerName: p.ownerName,
+      ownerBoleta: p.ownerBoleta,
+      ownerTeam: p.ownerTeam,
+      buyerName: myName,
+      buyerBoleta: currentBoleta,
+      buyerTeam: ROSTER[currentBoleta][1],
+      pointsCost: cost,
+      ts: Date.now(),
+      folio: `CC-${Date.now()}`
+    });
+
+    await batch.commit();
+
+    // Cerrar modal y mostrar comprobante
+    closeArtModal();
+    const exchData = {
+      productTitle: p.title,
+      productType: p.type,
+      productCategory: p.category,
+      productPhoto: p.photos?.[0] || '',
+      ownerName: p.ownerName,
+      ownerTeam: p.ownerTeam,
+      buyerName: myName,
+      buyerBoleta: currentBoleta,
+      buyerTeam: ROSTER[currentBoleta][1],
+      pointsCost: cost,
+      folio: `CC-${Date.now()}`,
+      ts: Date.now()
+    };
+    showComprobante(exchData);
+
+  }catch(e){
+    alert('Error al procesar el canje: ' + e.message);
+    console.error(e);
+  }
+}
+
+function showComprobante(exch){
+  const fecha = new Date(exch.ts).toLocaleDateString('es-MX',{day:'2-digit',month:'long',year:'numeric'});
+  const hora  = new Date(exch.ts).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
+  const catColors = {A:'#D8F3DC',B:'#DBEAFE',C:'#FEF3C7'};
+  const catText   = {A:'#1B4332',B:'#1E3A5F',C:'#92400E'};
+
+  // Crear overlay de comprobante
+  const overlay = document.createElement('div');
+  overlay.id = 'comprobante-overlay';
+  overlay.style.cssText = `
+    position:fixed;top:0;left:0;width:100%;height:100%;
+    background:rgba(0,0,0,0.5);z-index:2000;
+    display:flex;align-items:center;justify-content:center;
+    padding:1rem;backdrop-filter:blur(4px);
+  `;
+
+  overlay.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;
+      width:100%;max-width:420px;overflow:hidden;box-shadow:0 10px 25px rgba(0,0,0,.2)">
+
+      <!-- Header verde -->
+      <div style="background:#2D6A4F;padding:1.5rem;text-align:center;color:#fff">
+        <div style="font-size:32px;margin-bottom:.5rem">✅</div>
+        <div style="font-family:'DM Serif Display',serif;font-size:22px;margin-bottom:4px">¡Trueque exitoso!</div>
+        <div style="font-size:12px;opacity:.8">Folio: ${exch.folio}</div>
+      </div>
+
+      <!-- Cuerpo -->
+      <div style="padding:1.25rem 1.5rem">
+
+        <!-- Artículo -->
+        <div style="display:flex;gap:12px;align-items:center;padding:1rem;background:var(--bg);
+          border-radius:10px;margin-bottom:1rem;border:1px solid var(--border)">
+          ${exch.productPhoto
+            ? `<img src="${exch.productPhoto}" style="width:64px;height:64px;object-fit:cover;border-radius:8px;flex-shrink:0">`
+            : `<div style="width:64px;height:64px;border-radius:8px;background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">${TYPE_ICONS[exch.productType]||'📦'}</div>`
+          }
+          <div>
+            <div style="font-size:14px;font-weight:500">${exch.productTitle}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px">${TYPE_ICONS[exch.productType]||''} ${exch.productType}</div>
+            <span style="font-size:10px;padding:1px 8px;border-radius:99px;font-weight:500;
+              background:${catColors[exch.productCategory]};color:${catText[exch.productCategory]}">
+              Categoría ${exch.productCategory}
+            </span>
+          </div>
+        </div>
+
+        <!-- Datos del intercambio -->
+        <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:1rem;font-size:13px">
+          <div style="display:flex;justify-content:space-between;padding:8px 12px;border-bottom:1px solid var(--border)">
+            <span style="color:var(--muted)">De</span>
+            <span style="font-weight:500">${exch.ownerName.split(' ').slice(0,2).join(' ')} · ${exch.ownerTeam}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:8px 12px;border-bottom:1px solid var(--border)">
+            <span style="color:var(--muted)">Para</span>
+            <span style="font-weight:500">${exch.buyerName.split(' ').slice(0,2).join(' ')} · ${exch.buyerTeam}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:8px 12px;border-bottom:1px solid var(--border)">
+            <span style="color:var(--muted)">Puntos descontados</span>
+            <span style="font-weight:500;color:#9B2335">−${exch.pointsCost} pts</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:8px 12px">
+            <span style="color:var(--muted)">Fecha y hora</span>
+            <span style="font-weight:500">${fecha} ${hora}</span>
+          </div>
+        </div>
+
+        <!-- Botones -->
+        <div style="display:flex;gap:8px">
+          <button onclick="pdfComprobante(${JSON.stringify(exch).replace(/"/g,'&quot;')})"
+            style="flex:1;padding:10px;background:#2D6A4F;color:#fff;border:none;border-radius:10px;
+            font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif">
+            Descargar PDF
+          </button>
+          <button onclick="document.getElementById('comprobante-overlay').remove()"
+            style="flex:1;padding:10px;background:var(--bg);color:var(--text);
+            border:1px solid var(--border);border-radius:10px;font-size:13px;cursor:pointer;
+            font-family:'DM Sans',sans-serif">
+            Cerrar
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+}
+
+function pdfComprobante(exch){
+  const{jsPDF}=window.jspdf;
+  const doc=new jsPDF();
+  const fecha=new Date(exch.ts).toLocaleDateString('es-MX',{day:'2-digit',month:'long',year:'numeric'});
+  const hora=new Date(exch.ts).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
+
+  // Header
+  doc.setFillColor(45,106,79);doc.rect(0,0,210,40,'F');
+  doc.setTextColor(255,255,255);
+  doc.setFontSize(18);doc.setFont('helvetica','bold');
+  doc.text('Comprobante de Trueque',105,16,{align:'center'});
+  doc.setFontSize(10);doc.setFont('helvetica','normal');
+  doc.text('Círculo Cero — Sustentabilidad 2GM1 · Ciclo 2025–2026',105,25,{align:'center'});
+  doc.text(`Folio: ${exch.folio}`,105,33,{align:'center'});
+
+  let y=52;
+  doc.setTextColor(0,0,0);
+
+  // Artículo
+  doc.setFontSize(13);doc.setFont('helvetica','bold');
+  doc.text('Artículo intercambiado',14,y);y+=8;
+  doc.autoTable({startY:y,
+    body:[
+      ['Nombre',exch.productTitle],
+      ['Tipo',exch.productType],
+      ['Categoría','Cat. '+exch.productCategory+' ('+exch.pointsCost+' pts)'],
+    ],
+    styles:{fontSize:10,cellPadding:4},
+    columnStyles:{0:{cellWidth:50,fontStyle:'bold',fillColor:[245,242,236]},1:{cellWidth:130}},
+    theme:'grid'
+  });
+
+  y=doc.lastAutoTable.finalY+12;
+  doc.setFontSize(13);doc.setFont('helvetica','bold');doc.setTextColor(0,0,0);
+  doc.text('Participantes',14,y);y+=8;
+  doc.autoTable({startY:y,
+    body:[
+      ['Cedente (entrega)',exch.ownerName,exch.ownerTeam],
+      ['Receptor (recibe)',exch.buyerName,exch.buyerTeam],
+    ],
+    styles:{fontSize:10,cellPadding:4},
+    columnStyles:{0:{cellWidth:50,fontStyle:'bold',fillColor:[245,242,236]},1:{cellWidth:90},2:{cellWidth:40}},
+    theme:'grid'
+  });
+
+  y=doc.lastAutoTable.finalY+12;
+  doc.setFontSize(13);doc.setFont('helvetica','bold');doc.setTextColor(0,0,0);
+  doc.text('Detalle de la transacción',14,y);y+=8;
+  doc.autoTable({startY:y,
+    body:[
+      ['Puntos descontados','-'+exch.pointsCost+' pts'],
+      ['Fecha',fecha],
+      ['Hora',hora],
+      ['Folio',exch.folio],
+    ],
+    styles:{fontSize:10,cellPadding:4},
+    columnStyles:{0:{cellWidth:80,fontStyle:'bold',fillColor:[245,242,236]},1:{cellWidth:100}},
+    theme:'grid',
+    didParseCell:data=>{if(data.column.index===1&&data.row.index===0)data.cell.styles.textColor=[155,35,53];}
+  });
+
+  // Firma
+  y=doc.lastAutoTable.finalY+20;
+  doc.setDrawColor(200,200,200);
+  doc.line(14,y,96,y);doc.line(114,y,196,y);
+  doc.setFontSize(9);doc.setTextColor(150,150,150);
+  doc.text('Firma del cedente',55,y+6,{align:'center'});
+  doc.text('Firma del receptor',155,y+6,{align:'center'});
+
+  // Footer
+  const n=doc.internal.getNumberOfPages();
+  for(let i=1;i<=n;i++){
+    doc.setPage(i);doc.setFontSize(8);doc.setTextColor(150,150,150);
+    doc.text(`Círculo Cero 2GM1 — Comprobante válido con folio ${exch.folio}`,105,290,{align:'center'});
+  }
+
+  doc.save(`trueque_${exch.folio}.pdf`);
+}
+
 /*══ INIT ══ */
 initTheme();
 initFirebase();
