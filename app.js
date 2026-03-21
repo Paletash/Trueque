@@ -121,9 +121,10 @@ let db, auth, storage;
 let history=[], points={}, allProducts=[];
 let currentPath=null, currentBoleta=null;
 let selGradeVal=null, selSignVal=null, artCatVal=null;
-let unsubscribe=null, unsubProducts=null;
+let unsubscribe=null, unsubProducts=null, unsubExchanges=null;
 let chartWeekly=null, chartStuWeekly=null;
 let reviewTabState='pending';
+let truequeTabState='pending';
 let selectedPhotoFiles=[], tablonFilterState='';
 
 STUDENTS.forEach(([n])=>{points[n]=0;});
@@ -184,6 +185,12 @@ function subscribeToProducts(cb){
   },err=>{
     console.error('ERROR en subscribeToProducts:', err);
   });
+}
+function subscribeToExchanges(cb){
+  if(unsubExchanges)unsubExchanges();
+  unsubExchanges=db.collection('exchanges').orderBy('ts','desc').onSnapshot(snap=>{
+    cb(snap.docs.map(d=>({id:d.id,...d.data()})));
+  },err=>{console.error(err);});
 }
 
 function recalc(){
@@ -790,6 +797,7 @@ function enterAdminView(){
   showView('v-adm');populateStu();initDate();
   subscribeToData(()=>{renderAdmAll();renderPublic();});
   subscribeToProducts(()=>{renderCatalogo();renderPublic();});
+  subscribeToExchanges(exchanges=>{renderAdmTrueques(exchanges);});
 }
 
 function renderAdmAll(){
@@ -936,7 +944,16 @@ function admTab(t,el){
    HELPERS
    ══════════════════════════════════════════ */
 function showView(id){document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));document.getElementById(id).classList.add('on');}
-function logout(){if(unsubscribe)unsubscribe();if(unsubProducts)unsubProducts();currentBoleta=null;currentPath=null;if(auth)auth.signOut();backToCards();showView('v-login');document.getElementById('login-input').value='';if(document.getElementById('login-pass'))document.getElementById('login-pass').value='';}
+function logout(){
+  if(unsubscribe)unsubscribe();
+  if(unsubProducts)unsubProducts();
+  if(unsubExchanges)unsubExchanges();
+  currentBoleta=null;currentPath=null;
+  if(auth)auth.signOut();
+  backToCards();showView('v-login');
+  document.getElementById('login-input').value='';
+  if(document.getElementById('login-pass'))document.getElementById('login-pass').value='';
+}
 function initials(n){return n.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();}
 function fmtDate(d){const[y,m,day]=d.split('-');return`${day}/${m}/${y}`;}
 function pillCls(p){return p>0?'p-pos':p<0?'p-neg':'p-zero';}
@@ -1113,6 +1130,86 @@ function pdfAlertas(){
   doc.text(`Sin ningún registro aún (${zero.length})`,14,y);y+=4;
   if(zero.length){doc.autoTable({startY:y,head:[['Nombre','Equipo']],body:zero.map(([n,t])=>[n,t]),styles:{fontSize:8.5,cellPadding:3},headStyles:{fillColor:[120,120,120],textColor:255,fontStyle:'bold'},alternateRowStyles:{fillColor:[245,242,236]}});}
   pdfFooter(doc);doc.save('2GM1_alertas.pdf');
+}
+function pdfTrueques(){
+  const{jsPDF}=window.jspdf;const doc=new jsPDF();
+  let y=pdfHeader(doc,'Reporte de trueques completados');
+
+  const exchanges=window._allExchanges||[];
+  const completed=exchanges.filter(e=>e.status==='completed');
+  const pending=exchanges.filter(e=>e.status!=='completed');
+
+  // Resumen
+  doc.setFontSize(9);doc.setTextColor(100,100,100);
+  doc.text(`Trueques completados: ${completed.length}   |   Pendientes de entrega: ${pending.length}   |   Total: ${exchanges.length}`,14,y);y+=10;
+
+  // Tabla de completados
+  if(completed.length){
+    doc.setFontSize(11);doc.setFont('helvetica','bold');doc.setTextColor(0,0,0);
+    doc.text('Trueques confirmados',14,y);y+=6;
+    doc.autoTable({startY:y,
+      head:[['Folio','Artículo','Cat.','Cedente','Receptor','Equipo','Fecha']],
+      body:completed.map(e=>{
+        const fecha=new Date(e.ts).toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'});
+        return[
+          e.folio||'—',
+          e.productTitle,
+          'Cat. '+e.productCategory,
+          e.ownerName.split(' ').slice(0,2).join(' '),
+          e.buyerName.split(' ').slice(0,2).join(' '),
+          e.ownerTeam,
+          fecha
+        ];
+      }),
+      styles:{fontSize:7.5,cellPadding:2.5},
+      headStyles:{fillColor:[45,106,79],textColor:255,fontStyle:'bold'},
+      alternateRowStyles:{fillColor:[245,242,236]},
+      columnStyles:{
+        0:{cellWidth:28},
+        2:{cellWidth:14,halign:'center'},
+        5:{cellWidth:14,halign:'center'},
+        6:{cellWidth:22,halign:'center'}
+      }
+    });
+    y=doc.lastAutoTable.finalY+12;
+  }
+
+  // Tabla de pendientes
+  if(pending.length){
+    if(y>220){doc.addPage();y=20;}
+    doc.setFontSize(11);doc.setFont('helvetica','bold');doc.setTextColor(0,0,0);
+    doc.text('Trueques pendientes de entrega física',14,y);y+=6;
+    doc.autoTable({startY:y,
+      head:[['Folio','Artículo','Cat.','Cedente','Receptor','Pts','Fecha digital']],
+      body:pending.map(e=>{
+        const fecha=new Date(e.ts).toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'});
+        return[
+          e.folio||'—',
+          e.productTitle,
+          'Cat. '+e.productCategory,
+          e.ownerName.split(' ').slice(0,2).join(' '),
+          e.buyerName.split(' ').slice(0,2).join(' '),
+          '-'+e.pointsCost,
+          fecha
+        ];
+      }),
+      styles:{fontSize:7.5,cellPadding:2.5},
+      headStyles:{fillColor:[146,64,14],textColor:255,fontStyle:'bold'},
+      alternateRowStyles:{fillColor:[254,243,199]},
+      columnStyles:{
+        0:{cellWidth:28},
+        2:{cellWidth:14,halign:'center'},
+        5:{cellWidth:12,halign:'center'},
+        6:{cellWidth:22,halign:'center'}
+      },
+      didParseCell:data=>{
+        if(data.column.index===5&&data.section==='body')
+          data.cell.styles.textColor=[155,35,53];
+      }
+    });
+  }
+
+  pdfFooter(doc);doc.save('2GM1_trueques.pdf');
 }
 /* ══════════════════════════════════════════
    STUDENT TABLON
@@ -1560,6 +1657,136 @@ doc.autoTable({startY:y,
   }
 
   doc.save(`trueque_${exch.folio}.pdf`);
+}
+/* ══════════════════════════════════════════
+   ADMIN TRUEQUES
+   ══════════════════════════════════════════ */
+function switchTruequeTab(tab, el){
+  truequeTabState = tab;
+  document.querySelectorAll('#adm-trueques .review-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  renderAdmTrueques(window._allExchanges||[]);
+}
+
+function renderAdmTrueques(exchanges){
+  window._allExchanges = exchanges;
+
+  const pending = exchanges.filter(e => e.status !== 'completed');
+  const completed = exchanges.filter(e => e.status === 'completed');
+  const filtered = truequeTabState === 'pending' ? pending : completed;
+
+  // Actualizar badges
+  const count = pending.length;
+  ['adm-badge-trueques','adm-badge-trueques-mob'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.textContent = count;
+    el.style.display = count > 0 ? 'inline' : 'none';
+  });
+  document.getElementById('tab-count-trueques').textContent = pending.length;
+  document.getElementById('tab-count-trueques').style.display = pending.length ? 'inline' : 'none';
+
+  const el = document.getElementById('trueques-list');
+  if(!filtered.length){
+    el.innerHTML = `<div class="empty">${truequeTabState==='pending'?'No hay trueques pendientes de entrega física':'No hay trueques completados aún'}</div>`;
+    return;
+  }
+
+  const catColors={A:'var(--green-l)',B:'var(--blue-l)',C:'var(--amber-l)'};
+  const catText={A:'var(--green-d)',B:'var(--blue)',C:'var(--amber)'};
+
+  el.innerHTML = filtered.map(e => {
+    const fecha = new Date(e.ts).toLocaleDateString('es-MX',{day:'2-digit',month:'long',year:'numeric'});
+    const hora  = new Date(e.ts).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
+    const photoHtml = e.productPhoto
+      ? `<img src="${e.productPhoto}" style="width:64px;height:64px;object-fit:cover;border-radius:var(--r);border:1px solid var(--border);flex-shrink:0">`
+      : `<div style="width:64px;height:64px;border-radius:var(--r);background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:24px;border:1px solid var(--border);flex-shrink:0">${TYPE_ICONS[e.productType]||'📦'}</div>`;
+
+    const actionsHtml = e.status !== 'completed' ? `
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="btn-approve" onclick="confirmTrueque('${e.id}')">
+          ✅ Confirmar entrega física
+        </button>
+      </div>` :
+      `<div style="margin-top:8px">
+        <span class="status-approved">Entrega confirmada · ${e.completedTs ? new Date(e.completedTs).toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'}) : ''}</span>
+      </div>`;
+
+    return `<div class="product-card">
+      <div style="display:flex;gap:12px;padding:.75rem;align-items:flex-start">
+        ${photoHtml}
+        <div style="flex:1;min-width:0">
+          <div style="font-size:14px;font-weight:500;margin-bottom:4px">${e.productTitle}</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">
+            <span style="font-size:10px;padding:1px 8px;border-radius:99px;font-weight:500;background:${catColors[e.productCategory]};color:${catText[e.productCategory]}">Cat. ${e.productCategory}</span>
+            <span style="font-size:11px;color:var(--muted)">${TYPE_ICONS[e.productType]||''} ${e.productType}</span>
+            <span style="font-size:11px;color:var(--hint)">Folio: ${e.folio}</span>
+          </div>
+          <div style="font-size:12px;border:1px solid var(--border);border-radius:var(--r);overflow:hidden">
+            <div style="display:flex;justify-content:space-between;padding:5px 10px;border-bottom:1px solid var(--border);background:var(--bg)">
+              <span style="color:var(--muted);font-size:11px">Cedente</span>
+              <span style="font-size:12px;font-weight:500">${e.ownerName.split(' ').slice(0,2).join(' ')} · ${e.ownerTeam}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:5px 10px;border-bottom:1px solid var(--border)">
+              <span style="color:var(--muted);font-size:11px">Receptor</span>
+              <span style="font-size:12px;font-weight:500">${e.buyerName.split(' ').slice(0,2).join(' ')} · ${e.buyerTeam}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:5px 10px">
+              <span style="color:var(--muted);font-size:11px">Fecha digital</span>
+              <span style="font-size:12px">${fecha} ${hora}</span>
+            </div>
+          </div>
+          ${actionsHtml}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function confirmTrueque(exchangeId){
+  const confirmar = confirm('¿Confirmas que los alumnos ya realizaron el intercambio físico?\n\nEsto eliminará el artículo del tablón y sus fotos.');
+  if(!confirmar) return;
+
+  const exch = (window._allExchanges||[]).find(e => e.id === exchangeId);
+
+  try{
+    const batch = db.batch();
+
+    // 1. Marcar exchange como completado
+    batch.update(db.collection('exchanges').doc(exchangeId), {
+      status: 'completed',
+      completedTs: Date.now()
+    });
+
+    // 2. Eliminar el producto de Firestore
+    if(exch && exch.productId){
+      batch.delete(db.collection('products').doc(exch.productId));
+    }
+
+    await batch.commit();
+
+    // 3. Eliminar fotos de Storage (fuera del batch porque Storage es independiente)
+    if(exch && exch.productId){
+      const prod = allProducts.find(p => p.id === exch.productId);
+      if(prod && prod.photos && prod.photos.length){
+        for(const url of prod.photos){
+          try{
+            // Extraer la ruta del archivo desde la URL de Firebase Storage
+            const path = decodeURIComponent(url.split('/o/')[1].split('?')[0]);
+            await storage.ref(path).delete();
+          }catch(e){
+            console.warn('No se pudo eliminar foto:', e.message);
+          }
+        }
+      }
+    }
+
+    alert('✅ Entrega confirmada. El artículo fue eliminado del tablón.');
+
+  }catch(e){
+    alert('Error al confirmar: ' + e.message);
+    console.error(e);
+  }
 }
 /*══ INIT ══ */
 initTheme();
