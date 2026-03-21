@@ -1148,8 +1148,51 @@ function renderStuTablon(){
   }).join('');
 }
 
+/* ══════════════════════════════════════════
+   MODAL DE ARTÍCULO
+   ══════════════════════════════════════════ */
+function openArtModal(id){
+  const p = allProducts.find(pr => pr.id === id);
+  if(!p) return;
 
-/* ══ INIT ══ */
+  const catColors = {A:'var(--green-l)', B:'var(--blue-l)', C:'var(--amber-l)'};
+  const catText   = {A:'var(--green-d)', B:'var(--blue)',   C:'var(--amber)'};
+
+  const photosHtml = p.photos && p.photos.length
+    ? p.photos.map(url => `<img src="${url}" loading="lazy">`).join('')
+    : `<div style="width:100%;height:280px;display:flex;align-items:center;justify-content:center;font-size:48px;background:var(--bg)">${TYPE_ICONS[p.type]||'📦'}</div>`;
+
+  const ownerInitials = p.ownerName.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();
+
+  document.getElementById('modal-body').innerHTML = `
+    <div class="modal-photos">${photosHtml}</div>
+    <div class="modal-info">
+      <div class="modal-title">${p.title}</div>
+      <div class="modal-tags">
+        <span style="padding:3px 10px;border-radius:99px;font-size:12px;font-weight:500;background:${catColors[p.category]};color:${catText[p.category]}">Categoría ${p.category}</span>
+        <span style="padding:3px 10px;border-radius:99px;font-size:12px;background:var(--bg);color:var(--muted);border:1px solid var(--border)">${TYPE_ICONS[p.type]||''} ${p.type}</span>
+      </div>
+      <div class="modal-desc">${p.description}</div>
+      <div class="modal-owner">
+        <div style="width:36px;height:36px;border-radius:50%;background:var(--green-l);color:var(--green-d);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;flex-shrink:0">${ownerInitials}</div>
+        <div>
+          <div style="font-size:13px;font-weight:500">${p.ownerName}</div>
+          <div style="font-size:11px;color:var(--muted)">${p.ownerTeam} · ${TEAM_TOPICS[p.ownerTeam]||''}</div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('art-modal').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeArtModal(event){
+  if(event && event.target !== document.getElementById('art-modal')) return;
+  document.getElementById('art-modal').style.display = 'none';
+  document.body.style.overflow = '';
+}
+/*══ INIT ══ */
 initTheme();
 initFirebase();
 subscribeToProducts(()=>{renderPublic();});
