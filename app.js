@@ -324,11 +324,13 @@ function renderStuArticulos(ownerName){
   const el=document.getElementById('stu-mis-articulos');
   if(!mine.length){el.innerHTML='<div class="empty">Aún no has enviado ningún artículo</div>';return;}
   el.innerHTML=mine.map(p=>{
-    const statusHtml=p.status==='pending'?
-      '<span class="status-pending">Pendiente de revisión</span>':
-      p.status==='approved'?
-      `<span class="status-approved">Aprobado · +${p.pointsAwarded} pts</span>`:
-      `<span class="status-rejected">Rechazado</span>`;
+const statusHtml=p.status==='pending'?
+  '<span class="status-pending">Pendiente de revisión</span>':
+  p.status==='approved'?
+  `<span class="status-approved">Aprobado · +${p.pointsAwarded} pts</span>`:
+  p.status==='traded'?
+  `<span class="status-approved">Canjeado por ${p.tradedBy}</span>`:
+  `<span class="status-rejected">Rechazado</span>`;
     const comment=p.adminComment?`<div style="font-size:12px;color:var(--muted);margin-top:4px;padding:6px 8px;background:var(--bg);border-radius:var(--r)">Comentario: ${p.adminComment}</div>`:'';
     const photoHtml=p.photos&&p.photos.length?
       `<img src="${p.photos[0]}" style="width:64px;height:64px;object-fit:cover;border-radius:var(--r);border:1px solid var(--border);flex-shrink:0">`:
