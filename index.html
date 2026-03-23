@@ -6,13 +6,18 @@
 <title>Círculo Cero — 2GM1</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+window.addEventListener('error', function(e) {
+  document.body.insertAdjacentHTML('beforeend', '<div style="color:red;font-size:20px;z-index:9999;position:fixed;top:0;left:0;background:white;padding:10px;">' + e.message + ' at ' + e.filename + ':' + e.lineno + '</div>');
+});
+window.addEventListener('unhandledrejection', function(e) {
+  document.body.insertAdjacentHTML('beforeend', '<div style="color:red;font-size:20px;z-index:9999;position:fixed;top:40px;left:0;background:white;padding:10px;">Unhandled: ' + e.reason + '</div>');
+});
+</script>
 </head>
 <body>
 
@@ -49,6 +54,7 @@
       <button class="filter-chip" onclick="filterTablon('A',this)">Cat. A</button>
       <button class="filter-chip" onclick="filterTablon('B',this)">Cat. B</button>
       <button class="filter-chip" onclick="filterTablon('C',this)">Cat. C</button>
+      <button class="filter-chip" onclick="filterTablon('S',this)">Especiales</button>
       <button class="filter-chip" onclick="filterTablon('Ropa',this)">Ropa</button>
       <button class="filter-chip" onclick="filterTablon('Libros',this)">Libros</button>
       <button class="filter-chip" onclick="filterTablon('Joyería',this)">Joyería</button>
@@ -199,7 +205,14 @@
                 <div class="gb" id="art-gb-A" onclick="selectArtCat('A')">A<sub>Impecable · 3 pts</sub></div>
                 <div class="gb" id="art-gb-B" onclick="selectArtCat('B')">B<sub>Buen uso · 2 pts</sub></div>
                 <div class="gb" id="art-gb-C" onclick="selectArtCat('C')">C<sub>Con uso · 1 pt</sub></div>
+                <div class="gb" id="art-gb-S" onclick="selectArtCat('S')">S<sub>Especial</sub></div>
               </div>
+            </div>
+          </div>
+          <div class="fg" id="special-pts-wrap" style="display:none">
+            <div>
+              <label>Puntos solicitados (sólo Especiales)</label>
+              <input type="number" id="art-special-pts" min="1" placeholder="Ej: 5">
             </div>
           </div>
           <div class="fg">
@@ -239,6 +252,7 @@
           <button class="filter-chip" onclick="filterStuTablon('A',this)">Cat. A</button>
           <button class="filter-chip" onclick="filterStuTablon('B',this)">Cat. B</button>
           <button class="filter-chip" onclick="filterStuTablon('C',this)">Cat. C</button>
+          <button class="filter-chip" onclick="filterStuTablon('S',this)">Especiales</button>
           <button class="filter-chip" onclick="filterStuTablon('Ropa',this)">Ropa</button>
           <button class="filter-chip" onclick="filterStuTablon('Libros',this)">Libros</button>
         </div>
@@ -417,7 +431,9 @@
                 <div class="gb" id="gb-A" onclick="selGrade('A')">A<sub>3 pts</sub></div>
                 <div class="gb" id="gb-B" onclick="selGrade('B')">B<sub>2 pts</sub></div>
                 <div class="gb" id="gb-C" onclick="selGrade('C')">C<sub>1 pt</sub></div>
+                <div class="gb" id="gb-P" onclick="selGrade('P')">P<sub>Mnl.</sub></div>
               </div>
+              <input type="number" id="mov-custom" min="1" placeholder="Ej: 5 puntos..." style="display:none; margin-top:8px; width:100%; box-sizing:border-box; padding:8px; border:1px solid #ccc; border-radius:6px; font-family:inherit;">
             </div>
             <div>
               <label>Acción</label>
@@ -467,6 +483,7 @@
           <select id="hist-grade" onchange="renderAdmHist()">
             <option value="">Todos los grados</option>
             <option value="A">Grado A</option><option value="B">Grado B</option><option value="C">Grado C</option>
+            <option value="S">Especiales</option>
           </select>
         </div>
         <div class="card"><div id="adm-hist-list"></div></div>

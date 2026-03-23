@@ -184,6 +184,8 @@ input:focus,select:focus,textarea:focus{border-color:var(--green)}
 .gb.A{background:var(--green-l);color:var(--green-d);border-color:var(--green)}
 .gb.B{background:var(--blue-l);color:var(--blue);border-color:var(--blue)}
 .gb.C{background:var(--amber-l);color:var(--amber);border-color:var(--amber)}
+.gb.S{background:var(--purple-l);color:var(--purple);border-color:var(--purple)}
+.gb.P{background:var(--red-l);color:var(--red-d);border-color:var(--red)}
 .sb.plus{background:var(--green-l);color:var(--green-d);border-color:var(--green)}
 .sb.minus{background:var(--red-l);color:var(--red-d);border-color:var(--red)}
 .submit-btn{width:100%;padding:11px;background:var(--green);color:#fff;border:none;border-radius:var(--r);font-size:14px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;transition:background .15s;margin-top:4px}

@@ -1,14 +1,9 @@
 /* ══════════════════════════════════════════
    FIREBASE CONFIG
    ══════════════════════════════════════════ */
-const firebaseConfig = {
-  apiKey:            "AIzaSyAy48HyGn0gbvMuGF_XAlkf9orniggM_bc",
-  authDomain:        "trueque-2gm1.firebaseapp.com",
-  projectId:         "trueque-2gm1",
-  storageBucket:     "trueque-2gm1.firebasestorage.app",
-  messagingSenderId: "263937188019",
-  appId:             "1:263937188019:web:df16ccc87c195596ded0c6"
-};
+const supabaseUrl = 'https://tooriqtgsajatwigmice.supabase.co';
+const supabaseKey = 'sb_publishable_zhhE5AXV35EaZNbdqPZabw_c2z1dXYz';
+const supaClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
 /* ══════════════════════════════════════════
    ROSTER
@@ -117,11 +112,9 @@ function getMedals(name) {
 }
 const GRADES = {A:3,B:2,C:1};
 const STUDENTS = Object.entries(ROSTER).map(([b,[n,t]])=>[n,t,b]);
-let db, auth, storage;
 let history=[], points={}, allProducts=[];
 let currentPath=null, currentBoleta=null;
 let selGradeVal=null, selSignVal=null, artCatVal=null;
-let unsubscribe=null, unsubProducts=null, unsubExchanges=null;
 let chartWeekly=null, chartStuWeekly=null;
 let reviewTabState='pending';
 let truequeTabState='pending';
@@ -151,46 +144,40 @@ function initTheme(){
 /* ══════════════════════════════════════════
    FIREBASE
    ══════════════════════════════════════════ */
-function initFirebase(){
-  try{
-    firebase.initializeApp(firebaseConfig);
-    db=firebase.firestore();
-    auth=firebase.auth();
-    storage=firebase.storage();
-    auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
-    setDbStatus('ok','Conectado');
-  }catch(e){setDbStatus('err','Sin conexión');console.error(e);}
+function initSupabase(){
+  setDbStatus('ok','Conectado');
 }
 function setDbStatus(s,l){
   document.getElementById('db-dot').className='db-dot '+s;
   document.getElementById('db-label').textContent=l;
 }
 
-function subscribeToData(cb){
-  if(unsubscribe)unsubscribe();
-  unsubscribe=db.collection('movements').orderBy('ts','desc').onSnapshot(snap=>{
-    history=snap.docs.map(d=>({id:d.id,...d.data()}));
-    recalc();cb();
-  },err=>{setDbStatus('err','Error de conexión');console.error(err);});
+async function subscribeToData(cb){
+  const { data } = await supaClient.from('movements').select('*').order('ts', { ascending: false });
+  history = data || [];
+  recalc(); cb();
+  supaClient.channel('public:movements').on('postgres_changes', { event: '*', schema: 'public', table: 'movements' }, async () => {
+    const { data } = await supaClient.from('movements').select('*').order('ts', { ascending: false });
+    history = data || []; recalc(); cb();
+  }).subscribe();
 }
 
-function subscribeToProducts(cb){
-  if(unsubProducts)unsubProducts();
-  console.log('subscribeToProducts llamado');
-  unsubProducts=db.collection('products').orderBy('ts','desc').onSnapshot(snap=>{
-    console.log('productos recibidos:', snap.docs.length);
-    allProducts=snap.docs.map(d=>({id:d.id,...d.data()}));
-    console.log('allProducts:', allProducts);
-    cb();
-  },err=>{
-    console.error('ERROR en subscribeToProducts:', err);
-  });
+async function subscribeToProducts(cb){
+  const { data } = await supaClient.from('products').select('*').order('ts', { ascending: false });
+  allProducts = data || []; cb();
+  supaClient.channel('public:products').on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, async () => {
+    const { data } = await supaClient.from('products').select('*').order('ts', { ascending: false });
+    allProducts = data || []; cb();
+  }).subscribe();
 }
-function subscribeToExchanges(cb){
-  if(unsubExchanges)unsubExchanges();
-  unsubExchanges=db.collection('exchanges').orderBy('ts','desc').onSnapshot(snap=>{
-    cb(snap.docs.map(d=>({id:d.id,...d.data()})));
-  },err=>{console.error(err);});
+
+async function subscribeToExchanges(cb){
+  const { data } = await supaClient.from('exchanges').select('*').order('ts', { ascending: false });
+  cb(data || []);
+  supaClient.channel('public:exchanges').on('postgres_changes', { event: '*', schema: 'public', table: 'exchanges' }, async () => {
+    const { data } = await supaClient.from('exchanges').select('*').order('ts', { ascending: false });
+    cb(data || []);
+  }).subscribe();
 }
 
 function recalc(){
@@ -212,7 +199,7 @@ function compressImage(file, maxWidth=600){
         if(w>maxWidth){h=Math.round(h*maxWidth/w);w=maxWidth;}
         canvas.width=w;canvas.height=h;
         canvas.getContext('2d').drawImage(img,0,0,w,h);
-        canvas.toBlob(blob=>resolve(new File([blob],file.name,{type:'image/jpeg'})),'image/jpeg',0.70);
+        canvas.toBlob(blob=>resolve(new File([blob],file.name.replace(/\.[^/.]+$/, '.webp'),{type:'image/webp'})),'image/webp',0.75);
       };
       img.src=e.target.result;
     };
@@ -251,9 +238,11 @@ function removePhoto(idx){
    ══════════════════════════════════════════ */
 function selectArtCat(c){
   artCatVal=c;
-  ['A','B','C'].forEach(x=>{
+  ['A','B','C','S'].forEach(x=>{
     document.getElementById('art-gb-'+x).className='gb'+(x===c?' '+x:'');
   });
+  const ptsWrap = document.getElementById('special-pts-wrap');
+  if(ptsWrap) ptsWrap.style.display = (c==='S') ? 'grid' : 'none';
 }
 
 function showArtToast(msg,ok){
@@ -270,7 +259,12 @@ async function submitArticulo(){
 
   if(!title){showArtToast('Escribe el nombre del artículo',false);return;}
   if(!type){showArtToast('Selecciona el tipo de artículo',false);return;}
-  if(!artCatVal){showArtToast('Selecciona la categoría A, B o C',false);return;}
+  if(!artCatVal){showArtToast('Selecciona una categoría',false);return;}
+  let reqPts = 0;
+  if(artCatVal === 'S'){
+    reqPts = parseInt(document.getElementById('art-special-pts').value);
+    if(isNaN(reqPts) || reqPts < 1){showArtToast('Ingresa los puntos solicitados para Especial',false);return;}
+  }
   if(!desc){showArtToast('Agrega una descripción',false);return;}
   if(selectedPhotoFiles.length===0){showArtToast('Sube al menos una fotografía',false);return;}
 
@@ -285,23 +279,26 @@ async function submitArticulo(){
     const photoURLs=[];
     for(let i=0;i<selectedPhotoFiles.length;i++){
       const compressed=await compressImage(selectedPhotoFiles[i]);
-      const ref = storage.ref(`products/${currentBoleta}/${Date.now()}_${i}.jpg`);
-      await ref.put(compressed);
-      const url=await ref.getDownloadURL();
-      photoURLs.push(url);
+      const filePath = `${currentBoleta}/${Date.now()}_${i}.webp`;
+      const { error } = await supaClient.storage.from('products').upload(filePath, compressed, { upsert: true });
+      if(error) throw error;
+      const { data: publicURLData } = supaClient.storage.from('products').getPublicUrl(filePath);
+      photoURLs.push(publicURLData.publicUrl);
       progressBar.style.width=`${Math.round((i+1)/selectedPhotoFiles.length*100)}%`;
     }
 
     const[ownerName,ownerTeam]=ROSTER[currentBoleta];
-    await db.collection('products').add({
+    const { error: dbErr } = await supaClient.from('products').insert([{
       ownerName, ownerTeam, ownerBoleta:currentBoleta,
       title, type, category:artCatVal, description:desc,
       photos:photoURLs,
       status:'pending',
       adminComment:'',
       pointsAwarded:0,
+      requestedPoints:reqPts,
       ts:Date.now(), reviewedTs:null
-    });
+    }]);
+    if(dbErr) throw dbErr;
 
     btn.disabled=false; btn.textContent='Enviar para revisión';
     progressWrap.style.display='none';
@@ -311,9 +308,11 @@ async function submitArticulo(){
     document.getElementById('art-desc').value='';
     document.getElementById('art-previews').innerHTML='';
     document.getElementById('art-photos').value='';
+    if(document.getElementById('art-special-pts')) document.getElementById('art-special-pts').value='';
     selectedPhotoFiles=[];
     artCatVal=null;
-    ['A','B','C'].forEach(x=>document.getElementById('art-gb-'+x).className='gb');
+    ['A','B','C','S'].forEach(x=>document.getElementById('art-gb-'+x).className='gb');
+    if(document.getElementById('special-pts-wrap')) document.getElementById('special-pts-wrap').style.display='none';
 
   }catch(e){
     btn.disabled=false; btn.textContent='Enviar para revisión';
@@ -392,19 +391,24 @@ function renderCatalogo(){
       p.photos.map(url=>`<img src="${url}" style="width:80px;height:80px;object-fit:cover;border-radius:var(--r);border:1px solid var(--border)">`).join(''):
       `<div style="width:80px;height:80px;border-radius:var(--r);background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:28px;border:1px solid var(--border)">${TYPE_ICONS[p.type]||'📦'}</div>`;
 
-    const catColors={A:'var(--green-l)',B:'var(--blue-l)',C:'var(--amber-l)'};
-    const catText={A:'var(--green-d)',B:'var(--blue)',C:'var(--amber)'};
+    const catColors={A:'var(--green-l)',B:'var(--blue-l)',C:'var(--amber-l)',S:'var(--purple-l)'};
+    const catText={A:'var(--green-d)',B:'var(--blue)',C:'var(--amber)',S:'var(--purple)'};
 
 const actionsHtml=p.status==='pending'?`
       <div style="margin-top:12px; padding-top:12px; border-top:1px dashed var(--border)">
         <label style="font-size:11px;color:var(--muted);margin-bottom:6px;display:block">Modificar categoría (Alumno sugirió: ${p.category})</label>
-        <select id="approve-cat-${p.id}" style="width:100%; margin-bottom:10px; padding:8px; font-size:13px; border:1px solid var(--border); border-radius:var(--r); background:var(--bg); color:var(--text);">
+        <select id="approve-cat-${p.id}" style="width:100%; margin-bottom:10px; padding:8px; font-size:13px; border:1px solid var(--border); border-radius:var(--r); background:var(--bg); color:var(--text);" onchange="document.getElementById('pts-wrap-${p.id}').style.display=this.value==='S'?'block':'none'">
           <option value="A" ${p.category==='A'?'selected':''}>Grado A (Impecable · 3 pts)</option>
           <option value="B" ${p.category==='B'?'selected':''}>Grado B (Buen uso · 2 pts)</option>
           <option value="C" ${p.category==='C'?'selected':''}>Grado C (Con uso · 1 pt)</option>
+          <option value="S" ${p.category==='S'?'selected':''}>Especial (Pts dinámicos)</option>
         </select>
+        <div id="pts-wrap-${p.id}" style="display:${p.category==='S'?'block':'none'}; margin-bottom:10px;">
+          <label style="font-size:11px;color:var(--muted);margin-bottom:4px;display:block">Puntos a otorgar (Solicitados: ${p.requestedPoints||0})</label>
+          <input type="number" id="approve-pts-${p.id}" value="${p.requestedPoints||0}" style="width:100px; padding:8px; border:1px solid var(--border); border-radius:var(--r); background:var(--bg); color:var(--text);">
+        </div>
         <div class="product-card-actions">
-          <button class="btn-approve" onclick="confirmApprove('${p.id}','${p.ownerName}','${p.category}')">Aprobar artículo</button>
+          <button class="btn-approve" onclick="confirmApprove('${p.id}','${p.ownerName}','${p.category}',${p.requestedPoints||0})">Aprobar artículo</button>
           <button class="btn-reject" onclick="showRejectForm('${p.id}')">Rechazar</button>
         </div>
       </div>
@@ -443,27 +447,33 @@ function hideRejectForm(id){
   document.getElementById(`reject-form-${id}`).style.display='none';
 }
 
-async function confirmApprove(productId, ownerName, originalCategory){
+async function confirmApprove(productId, ownerName, originalCategory, requestedPoints){
   const catSelect=document.getElementById(`approve-cat-${productId}`).value;
-  const pts=GRADES[catSelect];
+  let pts=GRADES[catSelect];
   let autoComment='';
-  if(catSelect!==originalCategory){
+  if(catSelect==='S'){
+    pts = parseInt(document.getElementById(`approve-pts-${productId}`).value);
+    if(isNaN(pts) || pts < 1){ alert('Ingresa puntos válidos para la categoría Especial.'); return; }
+    if(pts < requestedPoints){
+      const motiv = prompt(`El alumno solicitó ${requestedPoints} pts pero le otorgarás ${pts}. Escribe el motivo de esta reducción (Obligatorio):`);
+      if(!motiv || motiv.trim()===''){ alert('Debes ingresar un motivo para reducir los puntos.'); return; }
+      autoComment = `Otorgado por ${pts} pts en lugar de los ${requestedPoints} solicitados. Motivo: ${motiv}`;
+    } else if(originalCategory !== 'S') {
+      autoComment = `La administración ajustó a categoría Especial otorgando ${pts} pts.`;
+    }
+  } else if(catSelect!==originalCategory){
     autoComment=`La administración ajustó la categoría de ${originalCategory} a ${catSelect} tras la revisión del artículo.`;
   }
   const ownerBoleta=getBoleta(ownerName);
   try{
-    const batch=db.batch();
-    batch.update(db.collection('products').doc(productId), {
+    await supaClient.from('products').update({
       status:'approved', category:catSelect, pointsAwarded:pts, reviewedTs:Date.now(), adminComment:autoComment
-    });
-    const movRef=db.collection('movements').doc();
-    batch.set(movRef, {
-  name:ownerName, boleta:ownerBoleta, grade:catSelect, sign:'+', delta:pts,
-  date:new Date().toISOString().slice(0,10),
-  desc:`Artículo aprobado (Cat. ${catSelect})`,
-  ts:Date.now(), auto:true
-});
-    await batch.commit();
+    }).eq('id', productId);
+    await supaClient.from('movements').insert([{
+      name:ownerName, boleta:ownerBoleta, grade:catSelect, sign:'+', delta:pts,
+      date:new Date().toISOString().slice(0,10), desc:`Artículo aprobado (Cat. ${catSelect})`,
+      ts:Date.now(), auto:true
+    }]);
   }catch(e){alert('Error al aprobar: '+e.message);}
 }
 
@@ -474,9 +484,9 @@ async function confirmReject(productId){
   const prod=allProducts.find(p=>p.id===productId);
   const boleta=prod?prod.ownerBoleta:'unknown';
   try{
-    await db.collection('products').doc(productId).update({
+    await supaClient.from('products').update({
       status:'rejected', adminComment:comment, reviewedTs:Date.now(), pointsAwarded:0
-    });
+    }).eq('id', productId);
   }catch(e){alert('Error al rechazar: '+e.message);}
 }
 
@@ -503,8 +513,8 @@ function renderTablon(){
     return;
   }
 
-  const catColors={A:'var(--green-l)',B:'var(--blue-l)',C:'var(--amber-l)'};
-  const catText={A:'var(--green-d)',B:'var(--blue)',C:'var(--amber)'};
+  const catColors={A:'var(--green-l)',B:'var(--blue-l)',C:'var(--amber-l)',S:'var(--purple-l)'};
+  const catText={A:'var(--green-d)',B:'var(--blue)',C:'var(--amber)',S:'var(--purple)'};
 
   el.innerHTML = filtered.map(p => {
     const imgHtml = p.photos && p.photos.length ?
@@ -625,14 +635,13 @@ function doLogin(){
     const pass=document.getElementById('login-pass').value;
     if(!email||!pass){errEl.textContent='Ingresa correo y contraseña.';return;}
     btn.textContent='Entrando...';btn.disabled=true;
-    auth.signInWithEmailAndPassword(email,pass)
-      .then(()=>{btn.textContent='Entrar';btn.disabled=false;enterAdminView();})
-      .catch(err=>{
-        btn.textContent='Entrar';btn.disabled=false;
-        if(err.code==='auth/wrong-password'||err.code==='auth/user-not-found'||err.code==='auth/invalid-credential'){
+    supaClient.auth.signInWithPassword({ email, password: pass })
+      .then(({data, error})=>{
+        if(error) {
+          btn.textContent='Entrar';btn.disabled=false;
           errEl.textContent='Correo o contraseña incorrectos.';
-        }else{
-          errEl.textContent='Error al iniciar sesión. Intenta de nuevo.';
+        } else {
+          btn.textContent='Entrar';btn.disabled=false;enterAdminView();
         }
       });
   }
@@ -908,7 +917,15 @@ function populateStu(q=''){
   });
 }
 function filterStu(){populateStu(document.getElementById('search-stu').value);}
-function selGrade(g){selGradeVal=g;['A','B','C'].forEach(x=>{document.getElementById('gb-'+x).className='gb'+(x===g?' '+x:'');});}
+function selGrade(g){
+  selGradeVal=g;
+  ['A','B','C','P'].forEach(x=>{
+    const el=document.getElementById('gb-'+x);
+    if(el) el.className='gb'+(x===g?' '+x:'');
+  });
+  const ci=document.getElementById('mov-custom');
+  if(ci) ci.style.display=(g==='P'?'block':'none');
+}
 function selSign(s){selSignVal=s;document.getElementById('sb-p').className='sb'+(s==='+'?' plus':'');document.getElementById('sb-m').className='sb'+(s==='-'?' minus':'');}
 function initDate(){const d=new Date(),p=n=>String(n).padStart(2,'0');document.getElementById('mov-date').value=`${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;}
 
@@ -917,18 +934,28 @@ async function doRegister(){
   const toast=document.getElementById('reg-toast');
   const showT=(msg,ok)=>{toast.textContent=msg;toast.className='toast '+(ok?'ok':'err');setTimeout(()=>toast.className='toast',2800);};
   if(!name){showT('Selecciona un alumno',false);return;}
-  if(!selGradeVal){showT('Elige el grado A, B o C',false);return;}
+  if(!selGradeVal){showT('Elige el grado o P',false);return;}
   if(!selSignVal){showT('Elige si suma o resta',false);return;}
+  
+  let delta=0;
+  if(selGradeVal==='P'){
+    const val=parseInt(document.getElementById('mov-custom').value,10);
+    if(!val || val<=0){showT('Ingresa una cantidad válida mayor a 0',false);return;}
+    delta=val*(selSignVal==='+'?1:-1);
+  } else {
+    delta=GRADES[selGradeVal]*(selSignVal==='+'?1:-1);
+  }
+  
   const date=document.getElementById('mov-date').value;
-  const desc=document.getElementById('mov-desc').value.trim()||`Grado ${selGradeVal}`;
-  const delta=GRADES[selGradeVal]*(selSignVal==='+'?1:-1);
+  const desc=document.getElementById('mov-desc').value.trim()||(selGradeVal==='P'?'Val. Personalizado':`Grado ${selGradeVal}`);
   const boleta=getBoleta(name);
   try{
-    await db.collection('movements').add({
-  name, boleta:getBoleta(name), grade:selGradeVal, sign:selSignVal, delta, date, desc, ts:Date.now()
-});
+    await supaClient.from('movements').insert([{
+      name, boleta, grade:selGradeVal, sign:selSignVal, delta, date, desc, ts:Date.now(), auto:false
+    }]);
     showT(`✓ ${delta>0?'+':''}${delta} pts para ${name.split(' ')[0]}`,true);
     document.getElementById('mov-desc').value='';
+    document.getElementById('mov-custom').value='';
   }catch(e){showT('Error al guardar.',false);console.error(e);}
 }
 
@@ -945,11 +972,9 @@ function admTab(t,el){
    ══════════════════════════════════════════ */
 function showView(id){document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));document.getElementById(id).classList.add('on');}
 function logout(){
-  if(unsubscribe)unsubscribe();
-  if(unsubProducts)unsubProducts();
-  if(unsubExchanges)unsubExchanges();
+  supaClient.removeAllChannels();
   currentBoleta=null;currentPath=null;
-  if(auth)auth.signOut();
+  if(supaClient.auth)supaClient.auth.signOut();
   backToCards();showView('v-login');
   document.getElementById('login-input').value='';
   if(document.getElementById('login-pass'))document.getElementById('login-pass').value='';
@@ -1236,8 +1261,8 @@ function renderStuTablon(){
     return;
   }
 
-  const catColors={A:'var(--green-l)',B:'var(--blue-l)',C:'var(--amber-l)'};
-  const catText={A:'var(--green-d)',B:'var(--blue)',C:'var(--amber)'};
+  const catColors={A:'var(--green-l)',B:'var(--blue-l)',C:'var(--amber-l)',S:'var(--purple-l)'};
+  const catText={A:'var(--green-d)',B:'var(--blue)',C:'var(--amber)',S:'var(--purple)'};
 
   el.innerHTML = filtered.map(p => {
     const imgHtml = p.photos && p.photos.length ?
@@ -1273,8 +1298,8 @@ function openArtModal(id){
   const p = allProducts.find(pr => pr.id === id);
   if(!p) return;
 
-  const catColors = {A:'var(--green-l)', B:'var(--blue-l)', C:'var(--amber-l)'};
-  const catText   = {A:'var(--green-d)', B:'var(--blue)',   C:'var(--amber)'};
+  const catColors = {A:'var(--green-l)', B:'var(--blue-l)', C:'var(--amber-l)', S:'var(--purple-l)'};
+  const catText   = {A:'var(--green-d)', B:'var(--blue)',   C:'var(--amber)', S:'var(--purple)'};
 
   const photosHtml = p.photos && p.photos.length
   ? p.photos.map((url, i) => `<img id="modal-img-${i}" src="${url}" loading="lazy" crossorigin="anonymous">`).join('')
@@ -1353,7 +1378,7 @@ async function canjearArticulo(productId){
 
   const [myName] = ROSTER[currentBoleta];
   const myPoints = points[myName] || 0;
-  const cost = GRADES[p.category];
+  const cost = p.pointsAwarded || GRADES[p.category];
 
   // Validaciones
   if(p.ownerBoleta === currentBoleta){
@@ -1373,53 +1398,26 @@ async function canjearArticulo(productId){
   if(!confirmar) return;
 
   try{
-    const batch = db.batch();
-
     // 1. Marcar artículo como canjeado
-    batch.update(db.collection('products').doc(productId), {
-      status: 'traded',
-      tradedBy: myName,
-      tradedByBoleta: currentBoleta,
-      tradedTs: Date.now()
-    });
+    await supaClient.from('products').update({
+      status: 'traded', tradedBy: myName, tradedByBoleta: currentBoleta, tradedTs: Date.now()
+    }).eq('id', productId);
 
     // 2. Descontar puntos al alumno que canjea
-    const movRef = db.collection('movements').doc();
-    batch.set(movRef, {
-      name: myName,
-      boleta: currentBoleta,
-      grade: p.category,
-      sign: '-',
-      delta: -cost,
-      date: new Date().toISOString().slice(0,10),
-      desc: `Trueque: ${p.title} (${p.ownerName.split(' ')[0]})`,
-      ts: Date.now(),
-      auto: true,
-      trueque: true,
-      productId
-    });
+    await supaClient.from('movements').insert([{
+      name: myName, boleta: currentBoleta, grade: p.category, sign: '-', delta: -cost,
+      date: new Date().toISOString().slice(0,10), desc: `Trueque: ${p.title} (${p.ownerName.split(' ')[0]})`,
+      ts: Date.now(), auto: true, trueque: true, productId
+    }]);
 
     // 3. Registrar el intercambio
-    const exchRef = db.collection('exchanges').doc();
-    batch.set(exchRef, {
-      productId,
-      productTitle: p.title,
-      productType: p.type,
-      productCategory: p.category,
-      productPhoto: p.photos?.[0] || '',
-      productPhotos: p.photos || [],
-      ownerName: p.ownerName,
-      ownerBoleta: p.ownerBoleta,
-      ownerTeam: p.ownerTeam,
-      buyerName: myName,
-      buyerBoleta: currentBoleta,
-      buyerTeam: ROSTER[currentBoleta][1],
-      pointsCost: cost,
-      ts: Date.now(),
-      folio: `CC-${Date.now()}`
-    });
-
-    await batch.commit();
+    await supaClient.from('exchanges').insert([{
+      productId, productTitle: p.title, productType: p.type, productCategory: p.category,
+      productPhoto: p.photos?.[0] || '', productPhotos: p.photos || [],
+      ownerName: p.ownerName, ownerBoleta: p.ownerBoleta, ownerTeam: p.ownerTeam,
+      buyerName: myName, buyerBoleta: currentBoleta, buyerTeam: ROSTER[currentBoleta][1],
+      pointsCost: cost, ts: Date.now(), folio: `CC-${Date.now()}`
+    }]);
 
     // Capturar imágenes ya cargadas del modal
     const photoBase64s = [];
@@ -1465,8 +1463,8 @@ async function canjearArticulo(productId){
 function showComprobante(exch){
   const fecha = new Date(exch.ts).toLocaleDateString('es-MX',{day:'2-digit',month:'long',year:'numeric'});
   const hora  = new Date(exch.ts).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
-  const catColors = {A:'#D8F3DC',B:'#DBEAFE',C:'#FEF3C7'};
-  const catText   = {A:'#1B4332',B:'#1E3A5F',C:'#92400E'};
+  const catColors = {A:'#D8F3DC',B:'#DBEAFE',C:'#FEF3C7',S:'#EDE9FE'};
+  const catText   = {A:'#1B4332',B:'#1E3A5F',C:'#92400E',S:'#4C1D95'};
 
   // Crear overlay de comprobante
   const overlay = document.createElement('div');
@@ -1692,8 +1690,8 @@ function renderAdmTrueques(exchanges){
     return;
   }
 
-  const catColors={A:'var(--green-l)',B:'var(--blue-l)',C:'var(--amber-l)'};
-  const catText={A:'var(--green-d)',B:'var(--blue)',C:'var(--amber)'};
+  const catColors={A:'var(--green-l)',B:'var(--blue-l)',C:'var(--amber-l)',S:'var(--purple-l)'};
+  const catText={A:'var(--green-d)',B:'var(--blue)',C:'var(--amber)',S:'var(--purple)'};
 
   el.innerHTML = filtered.map(e => {
     const fecha = new Date(e.ts).toLocaleDateString('es-MX',{day:'2-digit',month:'long',year:'numeric'});
@@ -1758,25 +1756,23 @@ async function confirmTrueque(exchangeId){
       completedTs: Date.now()
     });
 
-    // 2. Eliminar el producto de Firestore
+    // 2. Eliminar el producto
     if(exch && exch.productId){
-      batch.delete(db.collection('products').doc(exch.productId));
+      await supaClient.from('products').delete().eq('id', exch.productId);
     }
 
-    await batch.commit();
-
-    // 3. Eliminar fotos de Storage (fuera del batch porque Storage es independiente)
+    // 3. Eliminar fotos
     if(exch && exch.productId){
       const prod = allProducts.find(p => p.id === exch.productId);
       if(prod && prod.photos && prod.photos.length){
         for(const url of prod.photos){
           try{
-            // Extraer la ruta del archivo desde la URL de Firebase Storage
-            const path = decodeURIComponent(url.split('/o/')[1].split('?')[0]);
-            await storage.ref(path).delete();
-          }catch(e){
-            console.warn('No se pudo eliminar foto:', e.message);
-          }
+            const pathUrl = new URL(url);
+            const parts = pathUrl.pathname.split('/products/');
+            if(parts.length > 1){
+              await supaClient.storage.from('products').remove([parts[1]]);
+            }
+          }catch(e){ console.warn('No se pudo eliminar foto:', e.message); }
         }
       }
     }
@@ -1790,6 +1786,6 @@ async function confirmTrueque(exchangeId){
 }
 /*══ INIT ══ */
 initTheme();
-initFirebase();
+initSupabase();
 subscribeToProducts(()=>{renderPublic();});
 subscribeToData(()=>{renderPublic();});
