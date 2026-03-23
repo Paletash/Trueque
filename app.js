@@ -1042,7 +1042,24 @@ function logout(){
   if(document.getElementById('login-pass'))document.getElementById('login-pass').value='';
 }
 function initials(n){return n.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();}
-function fmtDate(d){const[y,m,day]=d.split('-');return`${day}/${m}/${y}`;}
+function fmtDate(d){
+  if(!d) return '—';
+  if(typeof d === 'string' && d.includes('-')){
+    const parts=d.split('-');
+    if(parts.length===3) return`${parts[2]}/${parts[1]}/${parts[0]}`;
+  }
+  return String(d);
+}
+function checkPageBreak(doc, currentY, needed = 20){
+  if(currentY + needed > 280){
+    doc.addPage();
+    return 20;
+  }
+  return currentY;
+}
+
+function safeName(s){return s.normalize('NFD').replace(/[\u0300-\u036f]/g,"").replace(/[^a-zA-Z0-9_-]/g,"_");}
+
 function pillCls(p){return p>0?'p-pos':p<0?'p-neg':'p-zero';}
 function avCls(p){return p>0?'av-pos':p<0?'av-neg':'av-zero';}
 
@@ -1085,12 +1102,14 @@ function pdfAlumno(){
   const[name,team]=ROSTER[currentBoleta];
   const{jsPDF}=window.jspdf;const doc=new jsPDF();
   const fecha=new Date().toLocaleDateString('es-MX',{day:'2-digit',month:'long',year:'numeric'});
+
   doc.setFillColor(45,106,79);doc.rect(0,0,210,40,'F');
   doc.setTextColor(255,255,255);doc.setFontSize(16);doc.setFont('helvetica','bold');
   doc.text('Constancia de Participación',105,16,{align:'center'});
   doc.setFontSize(10);doc.setFont('helvetica','normal');
-  doc.text('Círculo Cero — Sustentabilidad 2GM1 · Ciclo 2025–2026',105,26,{align:'center'});
+  doc.text('Proyecto Trueque — Sustentabilidad 2GM1 · Ciclo 2025–2026',105,26,{align:'center'});
   doc.text(`Generado: ${fecha}`,105,33,{align:'center'});
+
   let y=52;
   doc.setTextColor(0,0,0);doc.setFontSize(13);doc.setFont('helvetica','bold');
   doc.text('Datos del alumno',14,y);y+=8;
@@ -1098,38 +1117,33 @@ function pdfAlumno(){
   doc.text(`Nombre: ${name}`,14,y);y+=6;
   doc.text(`Boleta: ${currentBoleta}`,14,y);y+=6;
   doc.text(`Equipo: ${team} — ${TEAM_TOPICS[team]||''}`,14,y);y+=6;
+
   const p=points[name];
   const mine=history.filter(m=>m.name===name);
   const pos=mine.filter(m=>m.sign==='+').reduce((s,m)=>s+m.delta,0);
   const neg=mine.filter(m=>m.sign==='-').reduce((s,m)=>s+m.delta,0);
-  const myProducts=allProducts.filter(pr=>pr.ownerName===name&&pr.status==='approved');
+
   y+=6;
   doc.setFontSize(13);doc.setFont('helvetica','bold');doc.text('Resumen de puntos',14,y);y+=8;
   doc.autoTable({startY:y,head:[['Concepto','Valor']],
-    body:[['Puntos ganados',(pos>0?'+':'')+pos],['Puntos descontados',neg],['Saldo neto',(p>0?'+':'')+p],['Total de movimientos',mine.length],['Artículos aprobados',myProducts.length]],
+    body:[['Puntos ganados',(pos>0?'+':'')+pos],['Puntos descontados',neg],['Saldo neto',(p>0?'+':'')+p],['Total de movimientos',mine.length]],
     styles:{fontSize:10,cellPadding:4},headStyles:{fillColor:[45,106,79],textColor:255,fontStyle:'bold'},
     columnStyles:{0:{cellWidth:120},1:{cellWidth:50,halign:'center'}},
     didParseCell:data=>{if(data.column.index===1&&data.section==='body'&&data.row.index===2){const v=parseFloat(data.cell.raw);data.cell.styles.textColor=v>=0?[27,67,50]:[155,35,53];data.cell.styles.fontStyle='bold';}}
   });
+
   y=doc.lastAutoTable.finalY+12;
   const achs=getAchievements(name).filter(a=>a.unlocked);
   if(achs.length){
     doc.setFontSize(13);doc.setFont('helvetica','bold');doc.setTextColor(0,0,0);doc.text('Logros obtenidos',14,y);y+=8;
     doc.autoTable({startY:y,head:[['Logro','Descripción']],
-      body:achs.map(a=>[a.name,a.desc]),
+      body:achs.map(a=>[a.name, a.desc]),
       styles:{fontSize:9,cellPadding:3},headStyles:{fillColor:[45,106,79],textColor:255,fontStyle:'bold'},
       alternateRowStyles:{fillColor:[245,242,236]},
-    });y=doc.lastAutoTable.finalY+12;
+    });
+    y=doc.lastAutoTable.finalY+12;
   }
-  if(myProducts.length){
-    doc.setFontSize(13);doc.setFont('helvetica','bold');doc.setTextColor(0,0,0);doc.text('Artículos aprobados',14,y);y+=8;
-    doc.autoTable({startY:y,head:[['Artículo','Tipo','Cat.','Puntos']],
-      body:myProducts.map(pr=>[pr.title,pr.type,'Cat. '+pr.category,'+'+pr.pointsAwarded]),
-      styles:{fontSize:9,cellPadding:3},headStyles:{fillColor:[45,106,79],textColor:255,fontStyle:'bold'},
-      alternateRowStyles:{fillColor:[245,242,236]},
-      columnStyles:{2:{halign:'center'},3:{halign:'center'}},
-    });y=doc.lastAutoTable.finalY+12;
-  }
+
   if(mine.length){
     doc.setFontSize(13);doc.setFont('helvetica','bold');doc.setTextColor(0,0,0);doc.text('Historial de movimientos',14,y);y+=8;
     doc.autoTable({startY:y,head:[['Fecha','Grado','Acción','Pts','Descripción']],
@@ -1140,6 +1154,7 @@ function pdfAlumno(){
       didParseCell:data=>{if(data.column.index===3&&data.section==='body'){const v=parseFloat(data.cell.raw);if(v>0)data.cell.styles.textColor=[27,67,50];else if(v<0)data.cell.styles.textColor=[155,35,53];}}
     });
   }
+
   const totalPages=doc.internal.getNumberOfPages();
   for(let i=1;i<=totalPages;i++){doc.setPage(i);doc.setFontSize(8);doc.setTextColor(150,150,150);doc.text(`Página ${i} de ${totalPages} — Constancia de ${name}`,105,290,{align:'center'});}
   doc.save(`constancia_${name.split(' ')[0]}_${name.split(' ')[1]||''}.pdf`);
