@@ -1250,27 +1250,27 @@ function pdfTrueques(){
     doc.setFontSize(11);doc.setFont('helvetica','bold');doc.setTextColor(0,0,0);
     doc.text('Trueques confirmados',14,y);y+=6;
     doc.autoTable({startY:y,
-      head:[['Folio','Artículo','Cat.','Cedente','Receptor','Equipo','Fecha']],
+      head:[['Folio','Artículo','Cedente','Receptor','Equipo','Fecha','Confirmó']],
       body:completed.map(e=>{
         const fecha=new Date(e.ts).toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'});
         return[
           e.folio||'—',
           e.productTitle,
-          'Cat. '+e.productCategory,
           e.ownerName.split(' ').slice(0,2).join(' '),
           e.buyerName.split(' ').slice(0,2).join(' '),
           e.ownerTeam,
-          fecha
+          fecha,
+          e.confirmedBy ? e.confirmedBy.split(' ').slice(0,2).join(' ') : '—'
         ];
       }),
       styles:{fontSize:7.5,cellPadding:2.5},
       headStyles:{fillColor:[45,106,79],textColor:255,fontStyle:'bold'},
       alternateRowStyles:{fillColor:[245,242,236]},
       columnStyles:{
-        0:{cellWidth:28},
-        2:{cellWidth:14,halign:'center'},
-        5:{cellWidth:14,halign:'center'},
-        6:{cellWidth:22,halign:'center'}
+        0:{cellWidth:26},
+        4:{cellWidth:12,halign:'center'},
+        5:{cellWidth:16,halign:'center'},
+        6:{cellWidth:26}
       }
     });
     y=doc.lastAutoTable.finalY+12;
@@ -1779,12 +1779,17 @@ function renderAdmTrueques(exchanges){
 
     const actionsHtml = e.status !== 'completed' ? `
       <div style="display:flex;gap:8px;margin-top:10px">
-        <button class="btn-approve" onclick="confirmTrueque('${e.id}')">
+        <button class="btn-approve" onclick="confirmTrueque('${e.id}')" style="flex:1">
           ✅ Confirmar entrega física
         </button>
+        <button onclick="deleteTrueque('${e.id}')" style="background:transparent;border:1px solid var(--red);color:var(--red);padding:6px 12px;border-radius:var(--r);cursor:pointer" title="Eliminar registro">🗑️</button>
       </div>` :
-      `<div style="margin-top:8px">
-        <span class="status-approved">Entrega confirmada · ${e.completedTs ? new Date(e.completedTs).toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'}) : ''}</span>
+      `<div style="margin-top:8px;display:flex;flex-direction:column;gap:4px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span class="status-approved">✅ Entrega confirmada · ${e.completedTs ? new Date(e.completedTs).toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'}) : ''}</span>
+          <button onclick="deleteTrueque('${e.id}')" style="background:transparent;border:none;color:var(--red);cursor:pointer;font-size:14px" title="Eliminar registro">🗑️</button>
+        </div>
+        <span style="font-size:11px;color:var(--hint)">Confirmó: <strong style="color:var(--text)">${e.confirmedBy||'Admin'}</strong></span>
       </div>`;
 
     return `<div class="product-card">
@@ -1818,6 +1823,38 @@ function renderAdmTrueques(exchanges){
   }).join('');
 }
 
+async function deleteTrueque(exchangeId){
+  const confirmar = confirm('¿⚠️ ESTÁS SEGURO?\n\nEste registro se borrará de forma permanente.\n\nSi es un trueque pendiente, se reembolsarán los puntos al alumno y el artículo regresará al tablón público. Esta acción es irreversible.');
+  if(!confirmar) return;
+
+  const exch = (window._allExchanges||[]).find(e => e.id === exchangeId);
+
+  try{
+    // Lógica de reembolso si no estaba completado
+    if (exch && exch.status !== 'completed') {
+      const refundDelta = exch.pointsCost || 0;
+      if (refundDelta > 0 && exch.buyerBoleta) {
+        await supaClient.from('movements').insert([{
+          name: exch.buyerName, boleta: exch.buyerBoleta, grade: exch.productCategory || 'S', 
+          sign: '+', delta: refundDelta, date: new Date().toISOString().slice(0,10), 
+          desc: `Reembolso por cancelación de trueque: ${exch.productTitle}`, ts: Date.now(), auto: true
+        }]);
+      }
+      if (exch.productId) {
+        await supaClient.from('products').update({
+          status: 'approved', tradedBy: null, tradedByBoleta: null, tradedTs: null
+        }).eq('id', exch.productId);
+      }
+    }
+
+    await supaClient.from('exchanges').delete().eq('id', exchangeId);
+    alert('Trueque eliminado y procesado existosamente.');
+  }catch(e){
+    alert('Hubo un error borrando el registro de red.');
+    console.error(e);
+  }
+}
+
 async function confirmTrueque(exchangeId){
   const confirmar = confirm('¿Confirmas que los alumnos ya realizaron el intercambio físico?\n\nEsto eliminará el artículo del tablón y sus fotos.');
   if(!confirmar) return;
@@ -1825,8 +1862,11 @@ async function confirmTrueque(exchangeId){
   const exch = (window._allExchanges||[]).find(e => e.id === exchangeId);
 
   try{
+    const { data: { user } } = await supaClient.auth.getUser();
+    const adminEmail = user && user.email ? user.email : 'Admin desconocido';
+
     // 1. Marcar exchange como completado
-    await supaClient.from('exchanges').update({ status: 'completed', completedTs: Date.now() }).eq('id', exchangeId);
+    await supaClient.from('exchanges').update({ status: 'completed', completedTs: Date.now(), confirmedBy: adminEmail }).eq('id', exchangeId);
 
     // 2. Eliminar el producto
     if(exch && exch.productId){
