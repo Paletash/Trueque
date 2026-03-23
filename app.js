@@ -255,6 +255,31 @@ function showArtToast(msg,ok){
 }
 
 async function submitArticulo(){
+  const picker = document.getElementById('shared-upload-student-picker');
+  const isAdmin = picker ? picker.style.display !== 'none' : false;
+  let ownerName = '', ownerTeam = '', ownerBoleta = '';
+
+  if (isAdmin) {
+    const selValue = document.getElementById('upload-sel-stu').value;
+    if(!selValue) { showArtToast('Selecciona el dueño o Anónimo', false); return; }
+    
+    if (selValue === 'ANON') {
+      ownerName = 'Anónimo';
+      ownerTeam = 'N/A';
+      ownerBoleta = 'ANON';
+    } else {
+      ownerBoleta = getBoleta(selValue);
+      const r = ROSTER[ownerBoleta] || [selValue, 'Extra'];
+      ownerName = r[0];
+      ownerTeam = r[1];
+    }
+  } else {
+    ownerBoleta = currentBoleta;
+    const r = ROSTER[ownerBoleta];
+    ownerName = r[0];
+    ownerTeam = r[1];
+  }
+
   const title=document.getElementById('art-title').value.trim();
   const type=document.getElementById('art-type').value;
   const desc=document.getElementById('art-desc').value.trim();
@@ -281,7 +306,7 @@ async function submitArticulo(){
     const photoURLs=[];
     for(let i=0;i<selectedPhotoFiles.length;i++){
       const compressed=await compressImage(selectedPhotoFiles[i]);
-      const filePath = `${currentBoleta}/${Date.now()}_${i}.webp`;
+      const filePath = `${ownerBoleta}/${Date.now()}_${i}.webp`;
       const { error } = await supaClient.storage.from('products').upload(filePath, compressed, { upsert: true });
       if(error) throw error;
       const { data: publicURLData } = supaClient.storage.from('products').getPublicUrl(filePath);
@@ -289,9 +314,8 @@ async function submitArticulo(){
       progressBar.style.width=`${Math.round((i+1)/selectedPhotoFiles.length*100)}%`;
     }
 
-    const[ownerName,ownerTeam]=ROSTER[currentBoleta];
     const { error: dbErr } = await supaClient.from('products').insert([{
-      ownerName, ownerTeam, ownerBoleta:currentBoleta,
+      ownerName, ownerTeam, ownerBoleta,
       title, type, category:artCatVal, description:desc,
       photos:photoURLs,
       status:'pending',
@@ -919,6 +943,22 @@ function populateStu(q=''){
   });
 }
 function filterStu(){populateStu(document.getElementById('search-stu').value);}
+
+function populateStuUp(q=''){
+  const sel=document.getElementById('upload-sel-stu');
+  if(!sel)return;
+  sel.innerHTML='';
+  if(!q || "anonimo".includes(q.toLowerCase()) || "anónimo".includes(q.toLowerCase())){
+    const anon = document.createElement('option');
+    anon.value = "ANON";
+    anon.textContent = "Anónimo (Sin dueño)";
+    sel.appendChild(anon);
+  }
+  STUDENTS.filter(([n])=>n.toLowerCase().includes(q.toLowerCase())).forEach(([n,t])=>{
+    const o=document.createElement('option');o.value=n;o.textContent=`${n} (${t})`;sel.appendChild(o);
+  });
+}
+function filterUploadStu(){populateStuUp(document.getElementById('upload-search-stu').value);}
 function selGrade(g){
   selGradeVal=g;
   ['A','B','C','P'].forEach(x=>{
@@ -972,7 +1012,27 @@ function admTab(t,el){
 /* ══════════════════════════════════════════
    HELPERS
    ══════════════════════════════════════════ */
-function showView(id){document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));document.getElementById(id).classList.add('on');}
+function showView(id){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));
+  document.getElementById(id).classList.add('on');
+  
+  if (id === 'v-adm') {
+    const card = document.getElementById('shared-upload-card');
+    const container = document.getElementById('adm-upload-container');
+    if(card && container) {
+      container.appendChild(card);
+      document.getElementById('shared-upload-student-picker').style.display = 'block';
+      populateStuUp();
+    }
+  } else if (id === 'v-student') {
+    const card = document.getElementById('shared-upload-card');
+    const container = document.getElementById('stu-upload-container');
+    if(card && container) {
+      container.appendChild(card);
+      document.getElementById('shared-upload-student-picker').style.display = 'none';
+    }
+  }
+}
 function logout(){
   supaClient.removeAllChannels();
   currentBoleta=null;currentPath=null;

@@ -173,10 +173,20 @@ window.addEventListener('unhandledrejection', function(e) {
       <!-- MIS ARTÍCULOS -->
       <div id="stu-articulos" class="page">
         <p class="page-title">Mis artículos</p>
-        <!-- Formulario nuevo artículo -->
-        <div class="card">
+        <div id="stu-upload-container">
+        <!-- Formulario nuevo artículo (Compartido) -->
+        <div class="card" id="shared-upload-card">
           <div class="card-title">Registrar nuevo artículo</div>
           <div id="art-toast" class="toast"></div>
+
+          <!-- Selector de dueño (Solo Admin) -->
+          <div id="shared-upload-student-picker" style="display:none; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 15px;">
+            <div class="fg">
+              <div><label>Buscar dueño / Escribe "Anónimo"</label><input type="text" id="upload-search-stu" placeholder="Escribe el nombre..." oninput="filterUploadStu()"></div>
+              <div><label>Propietario del artículo</label><select id="upload-sel-stu" size="4" style="height:90px"></select></div>
+            </div>
+          </div>
+
           <div class="fg two">
             <div>
               <label>Nombre del artículo</label>
@@ -236,6 +246,7 @@ window.addEventListener('unhandledrejection', function(e) {
             </div>
           </div>
           <button class="submit-btn" id="art-submit-btn" onclick="submitArticulo()">Enviar para revisión</button>
+        </div>
         </div>
 
         <!-- Lista de mis artículos -->
@@ -353,9 +364,14 @@ window.addEventListener('unhandledrejection', function(e) {
           <span class="badge-count" id="adm-badge" style="display:none">0</span>
         </a>
         <a onclick="admTab('trueques',this)">
+        <a onclick="admTab('trueques',this)">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 16V4m0 0L3 8m4-4l4 4"/><path d="M17 8v12m0 0l4-4m-4 4l-4-4"/></svg>
         Trueques
         <span class="badge-count" id="adm-badge-trueques" style="display:none">0</span>
+        </a>
+        <a onclick="admTab('upload',this)">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Subir artículo
         </a>
       </nav>
       <div class="nav-sec" style="margin-top:auto">Reportes PDF</div>
@@ -413,6 +429,12 @@ window.addEventListener('unhandledrejection', function(e) {
           <button class="review-tab" onclick="switchReviewTab('rejected',this)">Rechazados</button>
         </div>
         <div id="catalogo-list"><div class="loading">Cargando...</div></div>
+      </div>
+
+      <!-- SUBIR ARTICULO ADMIN -->
+      <div id="adm-upload" class="page">
+        <p class="page-title">Subir artículo como gestor</p>
+        <div id="adm-upload-container"></div>
       </div>
 
       <!-- REGISTRAR PUNTOS -->
