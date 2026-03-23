@@ -211,11 +211,13 @@ function compressImage(file, maxWidth=600){
    PHOTO UPLOAD PREVIEW
    ══════════════════════════════════════════ */
 function previewPhotos(input){
-  const files=Array.from(input.files).slice(0,4);
-  selectedPhotoFiles=files;
+  if(input.files && input.files.length > 0){
+    const newFiles=Array.from(input.files);
+    selectedPhotoFiles = [...selectedPhotoFiles, ...newFiles].slice(0,4);
+  }
   const wrap=document.getElementById('art-previews');
   wrap.innerHTML='';
-  files.forEach((f,i)=>{
+  selectedPhotoFiles.forEach((f,i)=>{
     const reader=new FileReader();
     reader.onload=e=>{
       const div=document.createElement('div');
@@ -225,12 +227,12 @@ function previewPhotos(input){
     };
     reader.readAsDataURL(f);
   });
+  if(input.value) input.value = '';
 }
 
 function removePhoto(idx){
   selectedPhotoFiles.splice(idx,1);
-  const fakeInput={files:selectedPhotoFiles};
-  previewPhotos(fakeInput);
+  previewPhotos({files:[]});
 }
 
 /* ══════════════════════════════════════════
@@ -1748,13 +1750,8 @@ async function confirmTrueque(exchangeId){
   const exch = (window._allExchanges||[]).find(e => e.id === exchangeId);
 
   try{
-    const batch = db.batch();
-
     // 1. Marcar exchange como completado
-    batch.update(db.collection('exchanges').doc(exchangeId), {
-      status: 'completed',
-      completedTs: Date.now()
-    });
+    await supaClient.from('exchanges').update({ status: 'completed', completedTs: Date.now() }).eq('id', exchangeId);
 
     // 2. Eliminar el producto
     if(exch && exch.productId){
