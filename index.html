@@ -402,6 +402,7 @@
   <div id="v-adm" class="view" style="flex-direction:column">
     <div class="m-nav" id="adm-mnav">
       <button class="active" onclick="admTab('dash',this)">Resumen</button>
+      <button onclick="admTab('upload',this)">Subir art.</button>
       <button onclick="admTab('catalogo',this)">Catálogo <span class="badge-count" id="adm-badge-cat"
           style="display:none">0</span></button>
       <button onclick="admTab('reg',this)">Registrar</button>
@@ -478,7 +479,6 @@
             <span class="badge-count" id="adm-badge" style="display:none">0</span>
           </a>
           <a onclick="admTab('trueques',this)">
-            <a onclick="admTab('trueques',this)">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M7 16V4m0 0L3 8m4-4l4 4" />
                 <path d="M17 8v12m0 0l4-4m-4 4l-4-4" />
