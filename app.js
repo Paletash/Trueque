@@ -318,17 +318,21 @@ async function submitArticulo() {
       ownerName, ownerTeam, ownerBoleta,
       title, type, category: artCatVal, description: desc,
       photos: photoURLs,
-      status: 'pending',
-      adminComment: '',
-      pointsAwarded: 0,
+      status: isAdmin ? 'approved' : 'pending',
+      adminComment: isAdmin ? 'Registro histórico' : '',
+      pointsAwarded: isAdmin ? (artCatVal === 'S' ? reqPts : GRADES[artCatVal]) : 0,
       requestedPoints: reqPts,
-      ts: Date.now(), reviewedTs: null
+      ts: Date.now(), reviewedTs: isAdmin ? Date.now() : null
     }]);
     if (dbErr) throw dbErr;
 
     btn.disabled = false; btn.textContent = 'Enviar para revisión';
     progressWrap.style.display = 'none';
-    showArtToast('¡Artículo enviado! El equipo lo revisará pronto.', true);
+    if (isAdmin) {
+      showArtToast('¡Artículo subido y aprobado como registro histórico!', true);
+    } else {
+      showArtToast('¡Artículo enviado! El equipo lo revisará pronto.', true);
+    }
     document.getElementById('art-title').value = '';
     document.getElementById('art-type').value = '';
     document.getElementById('art-desc').value = '';
