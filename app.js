@@ -1913,7 +1913,18 @@ async function confirmTrueque(exchangeId) {
     console.error(e);
   }
 }
-/*══ INIT ══ */
+
+function openTermsModal() {
+  document.getElementById('terms-modal').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeTermsModal(e) {
+  if (e && e.target !== e.currentTarget) return;
+  document.getElementById('terms-modal').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
 initTheme();
 initSupabase();
 subscribeToProducts(() => { renderPublic(); });

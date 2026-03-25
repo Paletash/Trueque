@@ -95,6 +95,14 @@
 
       <div class="pub-section">Equipos</div>
       <div class="team-grid" id="pub-teams"></div>
+
+      <div style="text-align: center; padding: 40px 20px; border-top: 1px solid var(--border); margin-top: 40px;">
+        <p style="color: var(--hint); margin-bottom: 10px; font-size: 14px;">Círculo Cero — Materia de Sustentabilidad
+          2GM1</p>
+        <button onclick="openTermsModal()"
+          style="background:none; border:none; color:var(--text); text-decoration:underline; font-family:inherit; font-size:14px; cursor:pointer;">Leer
+          Términos y Condiciones</button>
+      </div>
     </div>
   </div>
 
@@ -782,6 +790,141 @@
       <div id="modal-body"></div>
     </div>
   </div>
+
+  <!-- MODAL DE TÉRMINOS Y CONDICIONES -->
+  <div id="terms-modal" class="modal-overlay" style="display:none" onclick="closeTermsModal(event)">
+    <div class="modal-content" onclick="event.stopPropagation()"
+      style="max-width: 600px; padding: 30px 25px; text-align: left;">
+      <button class="modal-close" onclick="closeTermsModal()">×</button>
+      <div id="terms-body" style="color: var(--text); font-size: 15px; line-height: 1.6;">
+        <h2
+          style="font-family: var(--font-title); margin-bottom: 20px; font-size: 24px; color: var(--green-d); text-align: center;">
+          Términos y Condiciones<br><span
+            style="font-size:18px; color:var(--text); font-family: var(--font-sans);">Círculo Cero 2GM1</span></h2>
+
+        <h4 style="margin-top: 25px; color: var(--green-d); font-weight: 500;">Reglas para que tu participación en el
+          trueque sea válida</h4>
+        <ul style="margin-left: 20px; margin-bottom: 20px;">
+          <li><strong>Condiciones de los artículos:</strong> Todos los objetos deben estar en buen estado, limpios y
+            funcionales. No se aceptan artículos rotos, manchados o incompletos.</li>
+          <li><strong>Valor justo:</strong> A=1 punto, B=2 puntos, C=3 puntos, S=Puntos a consideración.</li>
+          <li><strong>Revisión previa:</strong> Cada persona es responsable de revisar el artículo antes de aceptarlo.
+            Una vez realizado el trueque, no hay cambios ni devoluciones.</li>
+          <li><strong>Respeto y honestidad:</strong> Se debe actuar con respeto y transparencia sobre el estado real del
+            artículo.</li>
+          <li><strong>Acuerdos claros:</strong> Cualquier condición especial debe quedar clara antes de que el artículo
+            sea entregado.</li>
+        </ul>
+
+        <h4 style="margin-top: 25px; color: var(--green-d); font-weight: 500;">1. Objetivo del Trueque</h4>
+        <p>El trueque tiene como finalidad:</p>
+        <ul style="margin-left: 20px; margin-bottom: 20px;">
+          <li>Fomentar el aprovechamiento responsable de recursos.</li>
+          <li>Promover el intercambio justo de prendas de vestir y artículos escolares en buen estado.</li>
+          <li>Reducir el consumo innecesario y el desperdicio.</li>
+          <li>Impulsar una cultura de economía circular entre los participantes.</li>
+        </ul>
+
+        <h4 style="margin-top: 25px; color: var(--green-d); font-weight: 500;">2. Condiciones de Participación</h4>
+        <p>Para poder participar, cada persona debe:</p>
+        <ul style="margin-left: 20px; margin-bottom: 20px;">
+          <li>Aportar ropa o material escolar funcional, limpio y en óptimas condiciones de uso.</li>
+          <li>Respetar las normas de convivencia, comunicación y equidad durante el trueque.</li>
+          <li>Aceptar estos Términos y Condiciones sin modificaciones.</li>
+        </ul>
+
+        <h4 style="margin-top: 25px; color: var(--green-d); font-weight: 500;">3. Productos Permitidos</h4>
+        <p>Solo se aceptan:</p>
+        <p><strong>Ropa:</strong></p>
+        <ul style="margin-left: 20px; margin-bottom: 10px;">
+          <li>Playeras, sudaderas, pantalones, chamarras, uniformes escolares.</li>
+          <li>Accesorios no íntimos: gorros, bufandas, mochilas, etc.</li>
+          <li>Deben estar lavados, sin roturas evidentes, sin manchas permanentes y sin olores desagradables.</li>
+        </ul>
+        <p><strong>Material Escolar:</strong></p>
+        <ul style="margin-left: 20px; margin-bottom: 20px;">
+          <li>Cuadernos nuevos o con al menos 70% de hojas disponibles.</li>
+          <li>Lápices, plumas, colores, marcadores funcionales.</li>
+          <li>Mochilas, estuches, reglas, carpetas.</li>
+          <li>Libros y guías escolares sin páginas faltantes.</li>
+          <li>Todo debe estar en buen estado funcional.</li>
+          <li><em>Extra:</em> De ser posible contactarse con uno de los organizadores para comentar el artículo que se
+            espera ser intercambiado para que se pueda aclarar si el artículo puede ser intercambiable/válido.</li>
+        </ul>
+
+        <h4 style="margin-top: 25px; color: var(--green-d); font-weight: 500;">4. Productos No Permitidos</h4>
+        <ul style="margin-left: 20px; margin-bottom: 20px;">
+          <li>Ropa interior o prendas íntimas.</li>
+          <li>Ropa dañada, rota, manchada o en mal estado.</li>
+          <li>Útiles escolares inservibles (lápices muy pequeños, marcadores secos, etc.).</li>
+          <li>Artículos electrónicos.</li>
+          <li>Alimentos, juguetes, medicamentos, cosméticos u otros no autorizados.</li>
+        </ul>
+
+        <h4 style="margin-top: 25px; color: var(--green-d); font-weight: 500;">5. Sistema de Valoración para el Trueque
+        </h4>
+        <p>Para asegurar un intercambio justo, se implementará un sistema de puntos:</p>
+        <ul style="margin-left: 20px; margin-bottom: 20px;">
+          <li>Cada prenda o artículo se revisará y se asignará un valor según su estado y utilidad.</li>
+          <li>Dos artículos pueden intercambiarse directamente si ambas partes están de acuerdo, incluso si no tienen el
+            mismo valor, siempre que sea voluntario.</li>
+          <li>Si hay diferencia de valor, se pueden usar puntos, intercambiar otros artículos o declinar la transacción.
+          </li>
+        </ul>
+
+        <h4 style="margin-top: 25px; color: var(--green-d); font-weight: 500;">6. Proceso del Intercambio</h4>
+        <ol style="margin-left: 20px; margin-bottom: 20px;">
+          <li><strong>Subida Digital:</strong> Cada participante sube fotografías de su artículo a la plataforma web y
+            selecciona la categoría de valor que considera inicial o justa.</li>
+          <li><strong>Curaduría y Evaluación:</strong> El administrador revisa el artículo presencialmente (generalmente
+            los viernes) y decide si aprueba la categoría sugerida o si merece otra distinta según su estado.</li>
+          <li><strong>Exhibición Virtual:</strong> Una vez aprobado, el artículo se coloca públicamente en el Tablón de
+            la página web.</li>
+          <li><strong>Trueque:</strong> Los participantes navegan por la página, eligen lo que desean y "compran"
+            (reservan) el artículo desde ahí mismo usando sus puntos.</li>
+          <li><strong>Entrega Física (Viernes):</strong> A través del sistema se genera un reporte o pase en PDF para
+            que los días viernes se realice la entrega física en persona y se concrete el intercambio.</li>
+        </ol>
+
+        <h4 style="margin-top: 25px; color: var(--green-d); font-weight: 500;">7. Responsabilidad de los Participantes
+        </h4>
+        <ul style="margin-left: 20px; margin-bottom: 20px;">
+          <li>Revisar cuidadosamente los artículos antes de aceptarlos en el trueque.</li>
+          <li>Comunicar con respeto dudas, inconformidades o solicitudes.</li>
+          <li>No exigir más de lo que corresponda al valor acordado.</li>
+          <li>No realizar intercambios indebidos fuera de las reglas.</li>
+        </ul>
+
+        <h4 style="margin-top: 25px; color: var(--green-d); font-weight: 500;">8. Responsabilidad de la Organización
+        </h4>
+        <p>La organización del evento se compromete a:</p>
+        <ul style="margin-left: 20px; margin-bottom: 20px;">
+          <li>Supervisar que los intercambios sean justos y transparentes.</li>
+          <li>Mantener un ambiente seguro y ordenado.</li>
+          <li>Evaluar objetivamente los artículos.</li>
+          <li>Intervenir en caso de desacuerdos.</li>
+          <li>Resguardar temporalmente los artículos durante el evento.</li>
+        </ul>
+
+        <h4 style="margin-top: 25px; color: var(--green-d); font-weight: 500;">9. Limitaciones de Responsabilidad</h4>
+        <p>La organización no se hace responsable por:</p>
+        <ul style="margin-left: 20px; margin-bottom: 20px;">
+          <li>Daños posteriores al intercambio.</li>
+          <li>Pérdidas de objetos personales no registrados.</li>
+          <li>Mal uso de los artículos adquiridos mediante trueque.</li>
+        </ul>
+
+        <h4 style="margin-top: 25px; color: var(--green-d); font-weight: 500;">10. Consentimiento</h4>
+        <p>La participación en el evento implica la aceptación total de estos Términos y Condiciones.</p>
+
+        <div style="text-align: center; margin-top: 30px;">
+          <button class="submit-btn" onclick="closeTermsModal()"
+            style="padding: 12px 30px; border-radius: 30px;">Entendido</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="app.js?v=2"></script>
 </body>
 
