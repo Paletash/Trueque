@@ -153,8 +153,8 @@ Redefine todas las variables del `:root` para invertir los colores. Se activa a�
 |-------|-----|
 | `.fg` | Grid de formulario con gap entre campos |
 | `.fg.two` | Versión de dos columnas (una en móvil) |
-| `.gb` | Botón de grado (A / B / C) |
-| `.gb.A / .B / .C` | Estado seleccionado de cada grado |
+| `.gb` | Botón de grado (A / B / C/ S) |
+| `.gb.A / .B / .C/ .S` | Estado seleccionado de cada grado |
 | `.sb` | Botón de signo (+ suma / − resta) |
 | `.sb.plus / .minus` | Estado seleccionado de cada signo |
 | `.submit-btn` | Botón de envío verde de ancho completo |
@@ -267,7 +267,7 @@ Recorre `history` y suma o resta cada `delta` al objeto `points` de cada alumno.
 ### Imágenes y subida
 
 #### `compressImage(file, maxWidth=900)`
-Recibe un `File` de imagen. Dibuja la imagen en un `<canvas>` reducida a un máximo de 900px de ancho manteniendo proporción. Devuelve un nuevo `File` JPEG comprimido al 82% de calidad. Evita subir fotos de varios MB.
+Recibe un `File` de imagen. Dibuja la imagen en un `<canvas>` reducida a un máximo de 900px de ancho manteniendo proporción. Devuelve un nuevo `File` WEBP comprimido al 82% de calidad. Evita subir fotos de varios MB.
 
 #### `previewPhotos(input)`
 Lee los archivos seleccionados (máximo 4), los almacena en `selectedPhotoFiles` y muestra miniaturas con un botón × para eliminar cada una.
