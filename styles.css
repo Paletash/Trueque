@@ -1656,3 +1656,205 @@ textarea:focus {
     display: none
   }
 }
+
+/* ══════════════ MODALITY SELECTOR ══════════════ */
+.modality-selector {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px
+}
+
+.mod-btn {
+  flex: 1;
+  padding: 12px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: center;
+  transition: all .15s;
+  font-family: 'DM Sans', sans-serif
+}
+
+.mod-btn:hover {
+  border-color: var(--green);
+  color: var(--text)
+}
+
+.mod-btn.active {
+  background: var(--green-l);
+  color: var(--green-d);
+  border-color: var(--green);
+  font-weight: 500
+}
+
+/* ══════════════ SERVICE DELIVERY TAG ══════════════ */
+.service-delivery-tag {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 99px;
+  background: var(--purple-l);
+  color: var(--purple);
+  font-weight: 500;
+  white-space: nowrap
+}
+
+.service-modality-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 99px;
+  background: rgba(76, 29, 149, 0.85);
+  color: #fff;
+  font-weight: 500;
+  backdrop-filter: blur(4px)
+}
+
+/* ══════════════ PROFILE PAGE ══════════════ */
+.btn-back-profile {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  padding: 6px 14px;
+  border-radius: var(--r);
+  font-size: 13px;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  transition: all .15s;
+  flex-shrink: 0
+}
+
+.btn-back-profile:hover {
+  background: var(--bg);
+  color: var(--text)
+}
+
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 1.25rem;
+  padding: 1.5rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--rl);
+  box-shadow: var(--shadow)
+}
+
+.profile-avatar-lg {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 600;
+  flex-shrink: 0
+}
+
+.profile-info {
+  flex: 1;
+  min-width: 0
+}
+
+.profile-name {
+  font-family: 'DM Serif Display', serif;
+  font-size: 22px;
+  font-weight: 400;
+  margin-bottom: 4px
+}
+
+.profile-team {
+  font-size: 13px;
+  color: var(--muted)
+}
+
+.profile-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 1.25rem
+}
+
+.profile-stat {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 1rem;
+  text-align: center;
+  box-shadow: var(--shadow)
+}
+
+.profile-stat-val {
+  font-family: 'DM Serif Display', serif;
+  font-size: 24px;
+  color: var(--green)
+}
+
+.profile-stat-lbl {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px
+}
+
+.profile-section-title {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--hint);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  margin-bottom: .75rem;
+  margin-top: 1.5rem
+}
+
+.profile-publications-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 10px;
+  margin-bottom: 1rem
+}
+
+/* ══════════════ VIEW PROFILE BUTTON ══════════════ */
+.btn-view-profile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  margin-top: .75rem;
+  padding: 10px;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  transition: all .15s
+}
+
+.btn-view-profile:hover {
+  background: var(--green-l);
+  border-color: var(--green);
+  color: var(--green-d)
+}
+
+/* ══════════════ CLICKABLE RANK ROW ══════════════ */
+.row-item.clickable {
+  cursor: pointer;
+  transition: background .12s
+}
+
+.row-item.clickable:hover {
+  background: var(--bg);
+  margin: 0 -1.5rem;
+  padding: 8px 1.5rem;
+  border-radius: var(--r)
+}

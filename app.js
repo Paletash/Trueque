@@ -70,25 +70,44 @@ const TEAM_TOPICS = {
 };
 
 const TYPE_ICONS = {
-  "Ropa": "👕", "Libros": "📚", "Joyería": "💍", "Electrónicos": "📱",
-  "Juguetes": "🧸", "Hogar": "🏠", "Deportes": "⚽", "Arte": "🎨", "Otro": "📦"
+  "Ropa": '<i class="ph-fill ph-t-shirt"></i>',
+  "Libros": '<i class="ph-fill ph-books"></i>',
+  "Joyería": '<i class="ph-fill ph-sketch-logo"></i>',
+  "Electrónicos": '<i class="ph-fill ph-device-mobile"></i>',
+  "Juguetes": '<i class="ph-fill ph-game-controller"></i>',
+  "Hogar": '<i class="ph-fill ph-house"></i>',
+  "Deportes": '<i class="ph-fill ph-soccer-ball"></i>',
+  "Arte": '<i class="ph-fill ph-palette"></i>',
+  "Otro": '<i class="ph-fill ph-package"></i>'
 };
+
+const SERVICE_ICONS = {
+  "Tutoría": '<i class="ph-fill ph-chalkboard-teacher"></i>',
+  "Diseño": '<i class="ph-fill ph-paint-brush"></i>',
+  "Receta": '<i class="ph-fill ph-cooking-pot"></i>',
+  "Clase": '<i class="ph-fill ph-chalkboard"></i>',
+  "Asesoría": '<i class="ph-fill ph-chat-circle-dots"></i>',
+  "Otro": '<i class="ph-fill ph-lightbulb"></i>'
+};
+const PHYSICAL_TYPES = ['Ropa', 'Libros', 'Joyería', 'Electrónicos', 'Juguetes', 'Hogar', 'Deportes', 'Arte', 'Otro'];
+const SERVICE_TYPES = ['Tutoría', 'Diseño', 'Receta', 'Clase', 'Asesoría', 'Otro'];
 
 /* ══════════════════════════════════════════
    LOGROS
    ══════════════════════════════════════════ */
 const ACHIEVEMENTS = [
-  { id: 'primer_paso', icon: '🌱', name: 'Primer paso', desc: 'Tienes tu primer movimiento registrado', check: (p, moves) => moves >= 1 },
-  { id: 'bronce', icon: '🥉', name: 'Medalla Bronce', desc: 'Acumulaste 3 puntos o más', check: (p) => p >= 3 },
-  { id: 'plata', icon: '🥈', name: 'Medalla Plata', desc: 'Acumulaste 8 puntos o más', check: (p) => p >= 8 },
-  { id: 'oro', icon: '🥇', name: 'Medalla Oro', desc: 'Acumulaste 15 puntos o más', check: (p) => p >= 15 },
-  { id: 'constante', icon: '⭐', name: 'Constante', desc: '5 o más movimientos registrados', check: (p, moves) => moves >= 5 },
-  { id: 'triple', icon: '🎯', name: 'Triple grado', desc: 'Tienes aportaciones A, B y C', check: (p, moves, grades) => grades.has('A') && grades.has('B') && grades.has('C') },
-  { id: 'positivo', icon: '💚', name: 'Siempre positivo', desc: 'Saldo positivo con 3+ movimientos', check: (p, moves) => p > 0 && moves >= 3 },
-  { id: 'lider', icon: '🏆', name: 'Líder', desc: 'Acumulaste 25 puntos o más', check: (p) => p >= 25 },
-  { id: 'catalogador', icon: '📦', name: 'Catalogador', desc: 'Subiste tu primer artículo aprobado', check: (p, moves, grades, products) => products >= 1 },
-  { id: 'coleccionista', icon: '🛍️', name: 'Coleccionista', desc: 'Tienes 3 o más artículos aprobados', check: (p, moves, grades, products) => products >= 3 },
+  { id: 'primer_paso', icon: '<i class="ph-fill ph-plant"></i>', name: 'Primer paso', desc: 'Tienes tu primer movimiento registrado', check: (p, moves) => moves >= 1 },
+  { id: 'bronce', icon: '<i class="ph-fill ph-medal" style="color:#cd7f32"></i>', name: 'Medalla Bronce', desc: 'Acumulaste 3 puntos o más', check: (p) => p >= 3 },
+  { id: 'plata', icon: '<i class="ph-fill ph-medal" style="color:silver"></i>', name: 'Medalla Plata', desc: 'Acumulaste 8 puntos o más', check: (p) => p >= 8 },
+  { id: 'oro', icon: '<i class="ph-fill ph-medal" style="color:gold"></i>', name: 'Medalla Oro', desc: 'Acumulaste 15 puntos o más', check: (p) => p >= 15 },
+  { id: 'constante', icon: '<i class="ph-fill ph-star"></i>', name: 'Constante', desc: '5 o más movimientos registrados', check: (p, moves) => moves >= 5 },
+  { id: 'triple', icon: '<i class="ph-fill ph-target"></i>', name: 'Triple grado', desc: 'Tienes aportaciones A, B y C', check: (p, moves, grades) => grades.has('A') && grades.has('B') && grades.has('C') },
+  { id: 'positivo', icon: '<i class="ph-fill ph-heart"></i>', name: 'Siempre positivo', desc: 'Saldo positivo con 3+ movimientos', check: (p, moves) => p > 0 && moves >= 3 },
+  { id: 'lider', icon: '<i class="ph-fill ph-trophy" style="color:var(--amber)"></i>', name: 'Líder', desc: 'Acumulaste 25 puntos o más', check: (p) => p >= 25 },
+  { id: 'catalogador', icon: '<i class="ph-fill ph-package"></i>', name: 'Catalogador', desc: 'Subiste tu primer artículo aprobado', check: (p, moves, grades, products) => products >= 1 },
+  { id: 'coleccionista', icon: '<i class="ph-fill ph-shopping-bag"></i>', name: 'Coleccionista', desc: 'Tienes 3 o más artículos aprobados', check: (p, moves, grades, products) => products >= 3 },
 ];
+
 
 function getAchievements(name) {
   const mine = history.filter(m => m.name === name);
@@ -119,6 +138,8 @@ let chartWeekly = null, chartStuWeekly = null;
 let reviewTabState = 'pending';
 let truequeTabState = 'pending';
 let selectedPhotoFiles = [], tablonFilterState = '';
+let currentModality = 'physical';
+let prevStuPage = 'mis', prevAdmPage = 'dash';
 
 STUDENTS.forEach(([n]) => { points[n] = 0; });
 
@@ -129,7 +150,7 @@ function toggleDark() {
   const html = document.documentElement;
   const isDark = html.getAttribute('data-theme') === 'dark';
   html.setAttribute('data-theme', isDark ? 'light' : 'dark');
-  document.getElementById('dark-btn').textContent = isDark ? '🌙' : '☀️';
+  document.getElementById('dark-btn').textContent = isDark ? '<i class="ph-fill ph-moon"></i>' : '<i class="ph-fill ph-sun"></i>';
   localStorage.setItem('theme', isDark ? 'light' : 'dark');
   if (chartWeekly) chartWeekly.destroy(), chartWeekly = null;
   if (chartStuWeekly) chartStuWeekly.destroy(), chartStuWeekly = null;
@@ -138,7 +159,7 @@ function toggleDark() {
 function initTheme() {
   const t = localStorage.getItem('theme') || 'light';
   document.documentElement.setAttribute('data-theme', t);
-  document.getElementById('dark-btn').textContent = t === 'dark' ? '☀️' : '🌙';
+  document.getElementById('dark-btn').textContent = t === 'dark' ? '<i class="ph-fill ph-sun"></i>' : '<i class="ph-fill ph-moon"></i>';
 }
 
 /* ══════════════════════════════════════════
@@ -164,10 +185,10 @@ async function subscribeToData(cb) {
 
 async function subscribeToProducts(cb) {
   const { data } = await supaClient.from('products').select('*').order('ts', { ascending: false });
-  allProducts = data || []; cb();
+  allProducts = data || []; cb(); renderServicios();
   supaClient.channel('public:products').on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, async () => {
     const { data } = await supaClient.from('products').select('*').order('ts', { ascending: false });
-    allProducts = data || []; cb();
+    allProducts = data || []; cb(); renderServicios();
   }).subscribe();
 }
 
@@ -241,10 +262,54 @@ function removePhoto(idx) {
 function selectArtCat(c) {
   artCatVal = c;
   ['A', 'B', 'C', 'S'].forEach(x => {
-    document.getElementById('art-gb-' + x).className = 'gb' + (x === c ? ' ' + x : '');
+    const el = document.getElementById('art-gb-' + x);
+    if (el) el.className = 'gb' + (x === c ? ' ' + x : '');
   });
   const ptsWrap = document.getElementById('special-pts-wrap');
   if (ptsWrap) ptsWrap.style.display = (c === 'S') ? 'grid' : 'none';
+}
+
+function selectModality(mod) {
+  currentModality = mod;
+  document.getElementById('mod-physical').className = 'mod-btn' + (mod === 'physical' ? ' active' : '');
+  document.getElementById('mod-service').className = 'mod-btn' + (mod === 'service' ? ' active' : '');
+
+  const typeSelect = document.getElementById('art-type');
+  const types = mod === 'service' ? SERVICE_TYPES : PHYSICAL_TYPES;
+  typeSelect.innerHTML = '<option value="">Selecciona...</option>' + types.map(t => `<option>${t}</option>`).join('');
+
+  const titleLabel = document.getElementById('art-title-label');
+  const typeLabel = document.getElementById('art-type-label');
+  const descLabel = document.getElementById('art-desc-label');
+  const photoLabel = document.getElementById('art-photo-label');
+  const deliveryWrap = document.getElementById('delivery-method-wrap');
+  const titleInput = document.getElementById('art-title');
+  const descInput = document.getElementById('art-desc');
+
+  if (mod === 'service') {
+    titleLabel.textContent = 'Nombre del servicio';
+    typeLabel.textContent = 'Categoría del servicio';
+    descLabel.textContent = 'Descripción del servicio';
+    photoLabel.textContent = 'Imagen de referencia (opcional)';
+    titleInput.placeholder = 'Ej: Tutoría de matemáticas';
+    descInput.placeholder = 'Describe qué ofreces, duración, horarios disponibles, etc.';
+    deliveryWrap.style.display = 'grid';
+    document.getElementById('art-grade-wrap').style.display = 'none';
+    const ptsWrap = document.getElementById('special-pts-wrap');
+    if (ptsWrap) ptsWrap.style.display = 'none';
+    artCatVal = null;
+  } else {
+    titleLabel.textContent = 'Nombre del artículo';
+    typeLabel.textContent = 'Tipo';
+    descLabel.textContent = 'Descripción y estado de conservación';
+    photoLabel.textContent = 'Fotografías (mín. 1, máx. 2)';
+    titleInput.placeholder = 'Ej: Sudadera Nike talla M';
+    descInput.placeholder = 'Describe el artículo, su estado, medidas si aplica, etc.';
+    deliveryWrap.style.display = 'none';
+    document.getElementById('art-grade-wrap').style.display = 'grid';
+    document.getElementById('special-pts-label').textContent = 'Puntos a solicitar por categoría Especial';
+    selectArtCat(null); // Reset category selection
+  }
 }
 
 function showArtToast(msg, ok) {
@@ -286,14 +351,21 @@ async function submitArticulo() {
 
   if (!title) { showArtToast('Escribe el nombre del artículo', false); return; }
   if (!type) { showArtToast('Selecciona el tipo de artículo', false); return; }
-  if (!artCatVal) { showArtToast('Selecciona una categoría', false); return; }
   let reqPts = 0;
-  if (artCatVal === 'S') {
-    reqPts = parseInt(document.getElementById('art-special-pts').value);
-    if (isNaN(reqPts) || reqPts < 1) { showArtToast('Ingresa los puntos solicitados para Especial', false); return; }
+  if (currentModality === 'physical') {
+    if (!artCatVal) { showArtToast('Selecciona una categoría', false); return; }
+    if (artCatVal === 'S') {
+      reqPts = parseInt(document.getElementById('art-special-pts').value);
+      if (isNaN(reqPts) || reqPts < 1) { showArtToast('Ingresa los puntos solicitados para Especial', false); return; }
+    }
   }
   if (!desc) { showArtToast('Agrega una descripción', false); return; }
-  if (selectedPhotoFiles.length === 0) { showArtToast('Sube al menos una fotografía', false); return; }
+  if (currentModality === 'physical' && selectedPhotoFiles.length === 0) { showArtToast('Sube al menos una fotografía', false); return; }
+
+  const deliveryMethod = currentModality === 'service' ? (document.getElementById('art-delivery').value || '') : '';
+  if (currentModality === 'service' && !deliveryMethod) { showArtToast('Selecciona la forma de entrega', false); return; }
+
+  const isService = currentModality === 'service';
 
   const btn = document.getElementById('art-submit-btn');
   btn.disabled = true; btn.textContent = 'Subiendo fotos...';
@@ -316,20 +388,33 @@ async function submitArticulo() {
 
     const { error: dbErr } = await supaClient.from('products').insert([{
       ownerName, ownerTeam, ownerBoleta,
-      title, type, category: artCatVal, description: desc,
+      title, type, category: isService ? 'Servicio' : artCatVal, description: desc,
       photos: photoURLs,
-      status: isAdmin ? 'approved' : 'pending',
-      adminComment: isAdmin ? 'Registro histórico' : '',
-      pointsAwarded: isAdmin ? (artCatVal === 'S' ? reqPts : GRADES[artCatVal]) : 0,
-      requestedPoints: reqPts,
-      ts: Date.now(), reviewedTs: isAdmin ? Date.now() : null
+      modality: currentModality,
+      delivery_method: deliveryMethod,
+      status: (isAdmin || isService) ? 'approved' : 'pending',
+      adminComment: isAdmin ? 'Registro histórico' : isService ? 'Servicio auto-aprobado' : '',
+      pointsAwarded: isService ? 0 : (isAdmin ? (artCatVal === 'S' ? reqPts : GRADES[artCatVal]) : 0),
+      requestedPoints: isService ? 0 : reqPts,
+      ts: Date.now(), reviewedTs: (isAdmin || isService) ? Date.now() : null
     }]);
     if (dbErr) throw dbErr;
+
+    // Auto-crear movimiento para servicios aprobados automáticamente
+    if (isService && !isAdmin) {
+      await supaClient.from('movements').insert([{
+        name: ownerName, boleta: ownerBoleta, grade: 'S', sign: '+', delta: 0,
+        date: new Date().toISOString().slice(0, 10), desc: `Servicio publicado: ${title}`,
+        ts: Date.now(), auto: true
+      }]);
+    }
 
     btn.disabled = false; btn.textContent = 'Enviar para revisión';
     progressWrap.style.display = 'none';
     if (isAdmin) {
       showArtToast('¡Artículo subido y aprobado como registro histórico!', true);
+    } else if (isService) {
+      showArtToast('¡Servicio publicado exitosamente!', true);
     } else {
       showArtToast('¡Artículo enviado! El equipo lo revisará pronto.', true);
     }
@@ -341,8 +426,11 @@ async function submitArticulo() {
     if (document.getElementById('art-special-pts')) document.getElementById('art-special-pts').value = '';
     selectedPhotoFiles = [];
     artCatVal = null;
-    ['A', 'B', 'C', 'S'].forEach(x => document.getElementById('art-gb-' + x).className = 'gb');
+    currentModality = 'physical';
+    selectModality('physical');
+    ['A', 'B', 'C', 'S'].forEach(x => { const el = document.getElementById('art-gb-' + x); if (el) el.className = 'gb'; });
     if (document.getElementById('special-pts-wrap')) document.getElementById('special-pts-wrap').style.display = 'none';
+    if (document.getElementById('art-delivery')) document.getElementById('art-delivery').value = '';
 
   } catch (e) {
     btn.disabled = false; btn.textContent = 'Enviar para revisión';
@@ -355,6 +443,23 @@ async function submitArticulo() {
 /* ══════════════════════════════════════════
    RENDER STUDENT ARTICLES
    ══════════════════════════════════════════ */
+
+let reviewSrvTabState = 'pending';
+
+function switchReviewTab(status, el) {
+  reviewTabState = status;
+  document.querySelectorAll('#adm-catalogo .review-tab').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  renderCatalogo();
+}
+
+function switchSrvReviewTab(status, el) {
+  reviewSrvTabState = status;
+  document.querySelectorAll('#adm-servicios .review-tab').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  renderAdmServicios();
+}
+
 function renderStuArticulos(ownerName) {
   const mine = allProducts.filter(p => p.ownerName === ownerName);
   const el = document.getElementById('stu-mis-articulos');
@@ -370,7 +475,7 @@ function renderStuArticulos(ownerName) {
     const comment = p.adminComment ? `<div style="font-size:12px;color:var(--muted);margin-top:4px;padding:6px 8px;background:var(--bg);border-radius:var(--r)">Comentario: ${p.adminComment}</div>` : '';
     const photoHtml = p.photos && p.photos.length ?
       `<img src="${p.photos[0]}" style="width:64px;height:64px;object-fit:cover;border-radius:var(--r);border:1px solid var(--border);flex-shrink:0">` :
-      `<div style="width:64px;height:64px;border-radius:var(--r);background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:24px;border:1px solid var(--border)">${TYPE_ICONS[p.type] || '📦'}</div>`;
+      `<div style="width:64px;height:64px;border-radius:var(--r);background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:24px;border:1px solid var(--border)">${TYPE_ICONS[p.type] || '<i class="ph-fill ph-package"></i>'}</div>`;
     return `<div style="display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);align-items:flex-start">
       ${photoHtml}
       <div style="flex:1;min-width:0">
@@ -396,8 +501,8 @@ function switchReviewTab(tab, el) {
 }
 
 function renderCatalogo() {
-  const filtered = allProducts.filter(p => p.status === reviewTabState);
-  const pending = allProducts.filter(p => p.status === 'pending').length;
+  const filtered = allProducts.filter(p => p.status === reviewTabState && p.modality !== 'service');
+  const pending = allProducts.filter(p => p.status === 'pending' && p.modality !== 'service').length;
 
   document.getElementById('tab-count-pending').textContent = pending;
   document.getElementById('tab-count-pending').style.display = pending ? 'inline' : 'none';
@@ -419,7 +524,7 @@ function renderCatalogo() {
   el.innerHTML = filtered.map(p => {
     const photosHtml = p.photos && p.photos.length ?
       p.photos.map(url => `<img src="${url}" style="width:80px;height:80px;object-fit:cover;border-radius:var(--r);border:1px solid var(--border)">`).join('') :
-      `<div style="width:80px;height:80px;border-radius:var(--r);background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:28px;border:1px solid var(--border)">${TYPE_ICONS[p.type] || '📦'}</div>`;
+      `<div style="width:80px;height:80px;border-radius:var(--r);background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:28px;border:1px solid var(--border)">${TYPE_ICONS[p.type] || '<i class="ph-fill ph-package"></i>'}</div>`;
 
     const catColors = { A: 'var(--green-l)', B: 'var(--blue-l)', C: 'var(--amber-l)', S: 'var(--purple-l)' };
     const catText = { A: 'var(--green-d)', B: 'var(--blue)', C: 'var(--amber)', S: 'var(--purple)' };
@@ -531,9 +636,9 @@ function filterTablon(val, el) {
 }
 
 function renderTablon() {
-  const available = allProducts.filter(p => p.status === 'approved' || p.status === 'traded');
-  const filtered = tablonFilterState === '' ? available :
-    available.filter(p => p.category === tablonFilterState || p.type === tablonFilterState);
+  const available = allProducts.filter(p => (p.status === 'approved' || p.status === 'traded') && p.modality !== 'service');
+  let filtered = available;
+  if (tablonFilterState !== '') filtered = available.filter(p => p.category === tablonFilterState || p.type === tablonFilterState);
 
   document.getElementById('pub-products').textContent = allProducts.filter(p => p.status === 'approved').length;
 
@@ -547,25 +652,70 @@ function renderTablon() {
   const catText = { A: 'var(--green-d)', B: 'var(--blue)', C: 'var(--amber)', S: 'var(--purple)' };
 
   el.innerHTML = filtered.map(p => {
+    const isService = p.modality === 'service';
+    const icons = isService ? SERVICE_ICONS : TYPE_ICONS;
     const imgHtml = p.photos && p.photos.length ?
       `<img src="${p.photos[0]}" class="tablon-img" loading="lazy">` :
-      `<div class="tablon-img-placeholder">${TYPE_ICONS[p.type] || '📦'}</div>`;
+      `<div class="tablon-img-placeholder">${icons[p.type] || '<i class="ph-fill ph-package"></i>'}</div>`;
 
-    const tradedBadge = p.status === 'traded'
+    const tradedBadge = p.status === 'traded' && !isService
       ? `<div style="position:absolute;top:8px;left:8px;background:rgba(155,35,53,0.9);
           color:#fff;font-size:10px;font-weight:500;padding:2px 8px;border-radius:99px">
           No disponible
         </div>`
       : '';
 
+    const serviceBadge = isService
+      ? `<div class="service-modality-badge"><i class="ph-fill ph-lightbulb"></i> Servicio</div>`
+      : '';
+
+    const deliveryTag = isService && p.delivery_method
+      ? `<span class="service-delivery-tag">${p.delivery_method}</span>`
+      : '';
+
     return `<div class="tablon-card" style="position:relative">
-      ${tradedBadge}
+      ${tradedBadge}${serviceBadge}
       ${imgHtml}
       <div class="tablon-body">
         <div class="tablon-title">${p.title}</div>
         <div class="tablon-meta">
           <span style="padding:1px 7px;border-radius:99px;font-size:10px;font-weight:500;background:${catColors[p.category]};color:${catText[p.category]}">Cat. ${p.category}</span>
-          <span>${TYPE_ICONS[p.type] || ''} ${p.type}</span>
+          <span>${icons[p.type] || ''} ${p.type}</span>
+          ${deliveryTag}
+        </div>
+        <div style="font-size:11px;color:var(--hint);margin-top:4px">${p.ownerName.split(' ').slice(0, 2).join(' ')} · ${p.ownerTeam}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderServicios() {
+  const services = allProducts.filter(p => p.status === 'approved' && p.modality === 'service');
+  const el = document.getElementById('pub-services');
+  if (!el) return;
+  if (!services.length) {
+    el.innerHTML = '<div class="empty" style="grid-column:1/-1">No hay servicios digitales disponibles en este momento</div>';
+    return;
+  }
+
+  el.innerHTML = services.map(p => {
+    const icons = SERVICE_ICONS;
+    const imgHtml = p.photos && p.photos.length ?
+      `<img src="${p.photos[0]}" class="tablon-img" loading="lazy">` :
+      `<div class="tablon-img-placeholder">${icons[p.type] || '<i class="ph-fill ph-lightbulb"></i>'}</div>`;
+
+    const deliveryTag = p.delivery_method
+      ? `<span class="service-delivery-tag">${p.delivery_method}</span>`
+      : '';
+
+    return `<div class="tablon-card" style="position:relative">
+      <div class="service-modality-badge"><i class="ph-fill ph-lightbulb"></i> Servicio (Gratuito)</div>
+      ${imgHtml}
+      <div class="tablon-body">
+        <div class="tablon-title">${p.title}</div>
+        <div class="tablon-meta">
+          <span>${icons[p.type] || ''} ${p.type}</span>
+          ${deliveryTag}
         </div>
         <div style="font-size:11px;color:var(--hint);margin-top:4px">${p.ownerName.split(' ').slice(0, 2).join(' ')} · ${p.ownerTeam}</div>
       </div>
@@ -689,12 +839,12 @@ function renderPublic() {
   const sorted = [...STUDENTS].sort((a, b) => points[b[0]] - points[a[0]]);
   const top3 = sorted.slice(0, 3);
   const order = [1, 0, 2];
-  const medals = ['🥈', '🥇', '🥉'];
+  const medals = ['<i class="ph-fill ph-medal" style="color:silver"></i>', '<i class="ph-fill ph-medal" style="color:gold"></i>', '<i class="ph-fill ph-medal" style="color:#cd7f32"></i>'];
   const cards = document.getElementById('pub-podium').children;
   order.forEach((rankIdx, cardIdx) => {
     const [n, t] = top3[rankIdx] || ['—', '—'];
     const p = points[n] || 0;
-    cards[cardIdx].querySelector('.podium-medal').textContent = medals[cardIdx];
+    cards[cardIdx].querySelector('.podium-medal').innerHTML = medals[cardIdx];
     cards[cardIdx].querySelector('.podium-name').textContent = n.split(' ').slice(0, 2).join(' ');
     cards[cardIdx].querySelector('.podium-team').textContent = t;
     cards[cardIdx].querySelector('.podium-pts').textContent = (p > 0 ? '+' : '') + p + ' pts';
@@ -742,6 +892,8 @@ function renderStuAll(name, team) {
   renderStuTeamCard(team); renderStuChart(name);
   renderStuArticulos(name);
   renderStuTablon();
+  renderStuServicios();
+  renderStuNotificaciones(name);
 }
 
 function renderStuHero(name) {
@@ -812,7 +964,8 @@ function renderStuRanking(myName) {
   const max = Math.max(...sorted.map(([n]) => Math.abs(points[n])), 1);
   document.getElementById('stu-rank-list').innerHTML = sorted.map(([n, t], i) => {
     const p = points[n], isMe = n === myName, pct = Math.round(Math.abs(p) / max * 100);
-    return `<div class="row-item" style="${isMe ? 'background:var(--green-l);margin:0 -1.5rem;padding:8px 1.5rem;border-radius:var(--r);' : ''}">
+    return `<div class="row-item clickable" onclick="openProfile('${n.replace(/'/g, "\\'")}')"
+      style="${isMe ? 'background:var(--green-l);margin:0 -1.5rem;padding:8px 1.5rem;border-radius:var(--r);' : ''}">
       <span class="rank-n">${i + 1}</span>
       <span class="avatar ${isMe ? 'av-me' : avCls(p)}">${initials(n)}</span>
       <span class="name-col"><span class="nm">${n}${isMe ? ' ← tú' : ''}</span><span class="team-tag">${t}</span></span>
@@ -823,10 +976,12 @@ function renderStuRanking(myName) {
 }
 
 function stuTab(t, el) {
-  document.querySelectorAll('#stu-mis,#stu-articulos,#stu-tablon,#stu-logros,#stu-equipo,#stu-ranking,#stu-opciones').forEach(p => p.classList.remove('on'));
-  document.getElementById('stu-' + t).classList.add('on');
+  document.querySelectorAll('#v-stu .page').forEach(p => p.classList.remove('on'));
+  const target = document.getElementById('stu-' + t);
+  if (target) target.classList.add('on');
   document.querySelectorAll('#v-stu nav a,#stu-mnav button').forEach(a => a.classList.remove('active'));
   if (el) el.classList.add('active');
+  if (t !== 'perfil') prevStuPage = t;
 }
 
 /* ══════════════════════════════════════════
@@ -835,7 +990,7 @@ function stuTab(t, el) {
 function enterAdminView() {
   showView('v-adm'); populateStu(); initDate();
   subscribeToData(() => { renderAdmAll(); renderPublic(); });
-  subscribeToProducts(() => { renderCatalogo(); renderPublic(); });
+  subscribeToProducts(() => { renderCatalogo(); renderAdmServicios(); renderPublic(); });
   subscribeToExchanges(exchanges => { renderAdmTrueques(exchanges); });
 }
 
@@ -900,7 +1055,7 @@ function renderAdmRank(q = '', team = '') {
   const max = Math.max(...sorted.map(([n]) => Math.abs(points[n])), 1);
   document.getElementById('adm-rank-list').innerHTML = sorted.map(([n, t], i) => {
     const p = points[n], pct = Math.round(Math.abs(p) / max * 100);
-    return `<div class="row-item">
+    return `<div class="row-item clickable" onclick="openAdmProfile('${n.replace(/'/g, "\\'")}')">
       <span class="rank-n">${i + 1}</span>
       <span class="avatar ${avCls(p)}">${initials(n)}</span>
       <span class="name-col"><span class="nm">${n}</span><span class="team-tag">${t} ${getMedals(n)}</span></span>
@@ -978,7 +1133,7 @@ function initDate() { const d = new Date(), p = n => String(n).padStart(2, '0');
 async function doRegister() {
   const sel = document.getElementById('sel-stu'), name = sel.value;
   const toast = document.getElementById('reg-toast');
-  const showT = (msg, ok) => { toast.textContent = msg; toast.className = 'toast ' + (ok ? 'ok' : 'err'); setTimeout(() => toast.className = 'toast', 2800); };
+  const showT = (msg, ok) => { toast.innerHTML = msg; toast.className = 'toast ' + (ok ? 'ok' : 'err'); setTimeout(() => toast.className = 'toast', 2800); };
   if (!name) { showT('Selecciona un alumno', false); return; }
   if (!selGradeVal) { showT('Elige el grado o P', false); return; }
   if (!selSignVal) { showT('Elige si suma o resta', false); return; }
@@ -999,7 +1154,7 @@ async function doRegister() {
     await supaClient.from('movements').insert([{
       name, boleta, grade: selGradeVal, sign: selSignVal, delta, date, desc, ts: Date.now(), auto: false
     }]);
-    showT(`✓ ${delta > 0 ? '+' : ''}${delta} pts para ${name.split(' ')[0]}`, true);
+    showT(`<i class="ph-bold ph-check"></i> ${delta > 0 ? '+' : ''}${delta} pts para ${name.split(' ')[0]}`, true);
     document.getElementById('mov-desc').value = '';
     document.getElementById('mov-custom').value = '';
   } catch (e) { showT('Error al guardar.', false); console.error(e); }
@@ -1011,6 +1166,8 @@ function admTab(t, el) {
   document.querySelectorAll('#adm-nav a,#adm-mnav button').forEach(a => a.classList.remove('active'));
   if (el) el.classList.add('active');
   if (t === 'catalogo') renderCatalogo();
+  if (t === 'servicios') renderAdmServicios();
+  if (t !== 'perfil') prevAdmPage = t;
 }
 
 /* ══════════════════════════════════════════
@@ -1028,7 +1185,7 @@ function showView(id) {
       document.getElementById('shared-upload-student-picker').style.display = 'block';
       populateStuUp();
     }
-  } else if (id === 'v-student') {
+  } else if (id === 'v-stu') {
     const card = document.getElementById('shared-upload-card');
     const container = document.getElementById('stu-upload-container');
     if (card && container) {
@@ -1069,8 +1226,8 @@ function avCls(p) { return p > 0 ? 'av-pos' : p < 0 ? 'av-neg' : 'av-zero'; }
 
 function histItemHtml(m, showName = false) {
   const col = m.sign === '+' ? 'var(--green)' : 'var(--red)';
-  const gbg = m.grade === 'A' ? 'var(--green-l)' : m.grade === 'B' ? 'var(--blue-l)' : 'var(--amber-l)';
-  const gtx = m.grade === 'A' ? 'var(--green-d)' : m.grade === 'B' ? 'var(--blue)' : 'var(--amber)';
+  const gbg = m.grade === 'A' ? 'var(--green-l)' : m.grade === 'B' ? 'var(--blue-l)' : m.grade === 'S' ? 'var(--purple-l)' : 'var(--amber-l)';
+  const gtx = m.grade === 'A' ? 'var(--green-d)' : m.grade === 'B' ? 'var(--blue)' : m.grade === 'S' ? 'var(--purple)' : 'var(--amber)';
   const nameRow = showName ? `${m.name.split(' ').slice(0, 2).join(' ')} · ` : '';
   const autoTag = m.auto ? `<span style="font-size:10px;padding:1px 6px;border-radius:99px;background:var(--blue-l);color:var(--blue);margin-left:4px">Auto</span>` : '';
   return `<div class="hist-item">
@@ -1343,9 +1500,9 @@ function renderStuTablon() {
   const el = document.getElementById('stu-tablon-grid');
   if (!el) return;
 
-  const available = allProducts.filter(p => p.status === 'approved' || p.status === 'traded');
-  const filtered = stuTablonFilterState === '' ? available :
-    available.filter(p => p.category === stuTablonFilterState || p.type === stuTablonFilterState);
+  const available = allProducts.filter(p => (p.status === 'approved' || p.status === 'traded') && p.modality !== 'service');
+  let filtered = available;
+  if (stuTablonFilterState !== '') filtered = available.filter(p => p.category === stuTablonFilterState || p.type === stuTablonFilterState);
 
   if (!filtered.length) {
     el.innerHTML = '<div class="empty" style="grid-column:1/-1">No hay artículos disponibles con este filtro</div>';
@@ -1356,30 +1513,105 @@ function renderStuTablon() {
   const catText = { A: 'var(--green-d)', B: 'var(--blue)', C: 'var(--amber)', S: 'var(--purple)' };
 
   el.innerHTML = filtered.map(p => {
+    const isService = p.modality === 'service';
+    const icons = isService ? SERVICE_ICONS : TYPE_ICONS;
     const imgHtml = p.photos && p.photos.length ?
       `<img src="${p.photos[0]}" class="tablon-img" loading="lazy">` :
-      `<div class="tablon-img-placeholder">${TYPE_ICONS[p.type] || '📦'}</div>`;
+      `<div class="tablon-img-placeholder">${icons[p.type] || '<i class="ph-fill ph-package"></i>'}</div>`;
 
-    const tradedBadge = p.status === 'traded'
+    const tradedBadge = p.status === 'traded' && !isService
       ? `<div style="position:absolute;top:8px;left:8px;background:rgba(155,35,53,0.9);
           color:#fff;font-size:10px;font-weight:500;padding:2px 8px;border-radius:99px">
           No disponible
         </div>`
       : '';
 
+    const serviceBadge = isService
+      ? `<div class="service-modality-badge"><i class="ph-fill ph-lightbulb"></i> Servicio</div>`
+      : '';
+
+    const deliveryTag = isService && p.delivery_method
+      ? `<span class="service-delivery-tag">${p.delivery_method}</span>`
+      : '';
+
     return `<div class="tablon-card" onclick="openArtModal('${p.id}')" style="position:relative">
-      ${tradedBadge}
+      ${tradedBadge}${serviceBadge}
       ${imgHtml}
       <div class="tablon-body">
         <div class="tablon-title">${p.title}</div>
         <div class="tablon-meta">
           <span style="padding:1px 7px;border-radius:99px;font-size:10px;font-weight:500;background:${catColors[p.category]};color:${catText[p.category]}">Cat. ${p.category}</span>
-          <span>${TYPE_ICONS[p.type] || ''} ${p.type}</span>
+          <span>${icons[p.type] || ''} ${p.type}</span>
+          ${deliveryTag}
         </div>
         <div style="font-size:11px;color:var(--hint);margin-top:4px">${p.ownerName.split(' ').slice(0, 2).join(' ')} · ${p.ownerTeam}</div>
       </div>
     </div>`;
   }).join('');
+}
+
+function renderStuServicios() {
+  const el = document.getElementById('stu-services-grid');
+  if (!el) return;
+
+  const services = allProducts.filter(p => p.status === 'approved' && p.modality === 'service');
+  if (!services.length) {
+    el.innerHTML = '<div class="empty" style="grid-column:1/-1">No hay servicios digitales disponibles en este momento</div>';
+    return;
+  }
+
+  el.innerHTML = services.map(p => {
+    const icons = SERVICE_ICONS;
+    const imgHtml = p.photos && p.photos.length ?
+      `<img src="${p.photos[0]}" class="tablon-img" loading="lazy">` :
+      `<div class="tablon-img-placeholder">${icons[p.type] || '<i class="ph-fill ph-lightbulb"></i>'}</div>`;
+
+    const deliveryTag = p.delivery_method
+      ? `<span class="service-delivery-tag">${p.delivery_method}</span>`
+      : '';
+
+    return `<div class="tablon-card" onclick="openArtModal('${p.id}')" style="position:relative">
+      <div class="service-modality-badge"><i class="ph-fill ph-lightbulb"></i> Servicio (Gratuito)</div>
+      ${imgHtml}
+      <div class="tablon-body">
+        <div class="tablon-title">${p.title}</div>
+        <div class="tablon-meta">
+          <span>${icons[p.type] || ''} ${p.type}</span>
+          ${deliveryTag}
+        </div>
+        <div style="font-size:11px;color:var(--hint);margin-top:4px">${p.ownerName.split(' ').slice(0, 2).join(' ')} · ${p.ownerTeam}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderStuNotificaciones(name) {
+  const notifs = history.filter(m => m.name === name && m.grade === 'S' && m.delta === 0);
+  const badge1 = document.getElementById('stu-badge-notif');
+  const badge2 = document.getElementById('mob-notif-badge');
+  if (notifs.length > 0) {
+    if (badge1) { badge1.textContent = notifs.length; badge1.style.display = 'inline'; }
+    if (badge2) { badge2.textContent = notifs.length; badge2.style.display = 'inline'; }
+  } else {
+    if (badge1) badge1.style.display = 'none';
+    if (badge2) badge2.style.display = 'none';
+  }
+
+  const el = document.getElementById('stu-notificaciones-list');
+  if (!el) return;
+  if (!notifs.length) {
+    el.innerHTML = '<div class="empty">No tienes notificaciones recientes</div>';
+    return;
+  }
+  el.innerHTML = notifs.sort((a, b) => b.ts - a.ts).map(m => `
+    <div style="padding:16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px">
+      <div style="background:var(--purple-l);color:var(--purple);width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0"><i class="ph-fill ph-lightbulb"></i></div>
+      <div style="flex:1">
+        <div style="font-size:14px;color:var(--text);font-weight:500">${m.desc}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px">${fmtDate(m.date)}</div>
+      </div>
+    </div>
+  `).join('');
 }
 
 /* ══════════════════════════════════════════
@@ -1389,21 +1621,29 @@ function openArtModal(id) {
   const p = allProducts.find(pr => pr.id === id);
   if (!p) return;
 
+  const isService = p.modality === 'service';
+  const icons = isService ? SERVICE_ICONS : TYPE_ICONS;
   const catColors = { A: 'var(--green-l)', B: 'var(--blue-l)', C: 'var(--amber-l)', S: 'var(--purple-l)' };
   const catText = { A: 'var(--green-d)', B: 'var(--blue)', C: 'var(--amber)', S: 'var(--purple)' };
 
   const photosHtml = p.photos && p.photos.length
     ? p.photos.map((url, i) => `<img id="modal-img-${i}" src="${url}" loading="lazy" crossorigin="anonymous">`).join('')
-    : `<div style="width:100%;height:280px;display:flex;align-items:center;justify-content:center;font-size:48px;background:var(--bg)">${TYPE_ICONS[p.type] || '📦'}</div>`;
+    : `<div style="width:100%;height:280px;display:flex;align-items:center;justify-content:center;font-size:48px;background:var(--bg)">${icons[p.type] || '<i class="ph-fill ph-package"></i>'}</div>`;
 
   const ownerInitials = p.ownerName.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
 
   const [myName] = ROSTER[currentBoleta] || ['', ''];
   const myPts = points[myName] || 0;
-  const cost = GRADES[p.category];
+  const cost = isService ? 0 : (p.pointsAwarded || p.requestedPoints || GRADES[p.category] || 0);
   const isOwner = p.ownerBoleta === currentBoleta;
-  const isTraded = p.status === 'traded';
+  const isTraded = p.status === 'traded' && !isService;
   const canAfford = myPts >= cost;
+
+  const deliveryInfo = isService && p.delivery_method
+    ? `<div style="margin-top:.75rem;padding:8px 12px;background:var(--purple-l);border-radius:var(--r);font-size:12px;color:var(--purple)">
+        <strong>Forma de entrega:</strong> ${p.delivery_method}
+      </div>`
+    : '';
 
   let tradeBtn = '';
   if (currentBoleta) {
@@ -1417,16 +1657,17 @@ function openArtModal(id) {
         border:1px solid var(--red-l);font-size:13px;color:var(--red-d);text-align:center;font-weight:500">
         No disponible — ya fue canjeado
       </div>`;
-    } else if (!canAfford) {
+    } else if (!canAfford && !isService) {
       tradeBtn = `<div style="margin-top:1rem;padding:10px 14px;background:var(--amber-l);border-radius:10px;
         border:1px solid var(--amber-l);font-size:13px;color:var(--amber);text-align:center">
         Necesitas ${cost} pts — tienes ${myPts}
       </div>`;
     } else {
+      const btnLabel = isService ? `Reservar servicio <i class="ph-fill ph-push-pin"></i>` : `Canjear por ${cost} punto${cost > 1 ? 's' : ''} <i class="ph-bold ph-arrows-clockwise"></i>`;
       tradeBtn = `<button onclick="canjearArticulo('${p.id}')"
         style="width:100%;margin-top:1rem;padding:12px;background:#2D6A4F;color:#fff;border:none;
         border-radius:10px;font-size:14px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif">
-        Canjear por ${cost} punto${cost > 1 ? 's' : ''} 🔄
+        ${btnLabel}
       </button>`;
     }
   }
@@ -1436,10 +1677,12 @@ function openArtModal(id) {
     <div class="modal-info">
       <div class="modal-title">${p.title}</div>
       <div class="modal-tags">
-        <span style="padding:3px 10px;border-radius:99px;font-size:12px;font-weight:500;background:${catColors[p.category]};color:${catText[p.category]}">Categoría ${p.category}</span>
-        <span style="padding:3px 10px;border-radius:99px;font-size:12px;background:var(--bg);color:var(--muted);border:1px solid var(--border)">${TYPE_ICONS[p.type] || ''} ${p.type}</span>
+        ${!isService ? `<span style="padding:3px 10px;border-radius:99px;font-size:12px;font-weight:500;background:${catColors[p.category] || 'var(--bg)'};color:${catText[p.category] || 'var(--text)'}">Categoría ${p.category}</span>` : ''}
+        <span style="padding:3px 10px;border-radius:99px;font-size:12px;background:var(--bg);color:var(--muted);border:1px solid var(--border)">${icons[p.type] || ''} ${p.type}</span>
+        ${isService ? '<span style="padding:3px 10px;border-radius:99px;font-size:12px;background:var(--purple-l);color:var(--purple);font-weight:500"><i class="ph-fill ph-lightbulb"></i> Servicio (Gratuito)</span>' : ''}
       </div>
       <div class="modal-desc">${p.description}</div>
+      ${deliveryInfo}
       <div class="modal-owner">
         <div style="width:36px;height:36px;border-radius:50%;background:var(--green-l);color:var(--green-d);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;flex-shrink:0">${ownerInitials}</div>
         <div>
@@ -1447,6 +1690,7 @@ function openArtModal(id) {
           <div style="font-size:11px;color:var(--muted)">${p.ownerTeam} · ${TEAM_TOPICS[p.ownerTeam] || ''}</div>
         </div>
       </div>
+      ${currentBoleta ? `<button class="btn-view-profile" onclick="closeArtModal();openProfile('${p.ownerName.replace(/'/g, "\\'")}')"><i class="ph-fill ph-user"></i> Ver perfil de ${p.ownerName.split(' ').slice(0, 2).join(' ')}</button>` : ''}
       ${tradeBtn}
     </div>
   `;
@@ -1460,46 +1704,215 @@ function closeArtModal(event) {
   document.getElementById('art-modal').style.display = 'none';
   document.body.style.overflow = '';
 }
+
 /* ══════════════════════════════════════════
-   SISTEMA DE TRUEQUES
+   PERFIL DE ALUMNO
    ══════════════════════════════════════════ */
+function openProfile(name) {
+  const el = document.getElementById('perfil-content');
+  if (!el) return;
+  // Guardar la pestaña actual antes de abrir el perfil
+  const currentPage = document.querySelector('#v-stu .page.on');
+  if (currentPage && currentPage.id !== 'stu-perfil') prevStuPage = currentPage.id.replace('stu-', '');
+  document.getElementById('perfil-page-title').textContent = name.split(' ').slice(0, 2).join(' ');
+  el.innerHTML = renderProfileContent(name);
+  stuTab('perfil', null);
+}
+
+function closeProfile() {
+  stuTab(prevStuPage || 'mis', null);
+  // Reactivar el nav button correcto
+  const btns = document.querySelectorAll('#v-stu nav a, #stu-mnav button');
+  btns.forEach(b => {
+    if (b.textContent.trim().toLowerCase().includes(prevStuPage === 'mis' ? 'mis puntos' : prevStuPage)) b.classList.add('active');
+  });
+}
+
+function openAdmProfile(name) {
+  const el = document.getElementById('adm-perfil-content');
+  if (!el) return;
+  const currentPage = document.querySelector('#v-adm .page.on');
+  if (currentPage && currentPage.id !== 'adm-perfil') prevAdmPage = currentPage.id.replace('adm-', '');
+  document.getElementById('adm-perfil-page-title').textContent = name.split(' ').slice(0, 2).join(' ');
+  el.innerHTML = renderProfileContent(name);
+  admTab('perfil', null);
+}
+
+function closeAdmProfile() {
+  admTab(prevAdmPage || 'dash', null);
+  const btns = document.querySelectorAll('#adm-nav a, #adm-mnav button');
+  btns.forEach(b => b.classList.remove('active'));
+  // Reactivar el botón de nav correcto
+  const navLinks = document.querySelectorAll('#adm-nav a');
+  navLinks.forEach(a => {
+    const txt = a.textContent.trim().toLowerCase();
+    if (prevAdmPage === 'dash' && txt.includes('resumen')) a.classList.add('active');
+    else if (prevAdmPage === 'rank' && txt.includes('ranking')) a.classList.add('active');
+    else if (prevAdmPage === 'equipos' && txt.includes('equipos')) a.classList.add('active');
+    else if (prevAdmPage === 'hist' && txt.includes('historial')) a.classList.add('active');
+  });
+}
+
+function renderProfileContent(name) {
+  const entry = Object.entries(ROSTER).find(([b, [n]]) => n === name);
+  if (!entry) return '<div class="empty">Alumno no encontrado</div>';
+  const [boleta, [, team]] = entry;
+  const p = points[name] || 0;
+  const pCls = p > 0 ? 'av-pos' : p < 0 ? 'av-neg' : 'av-zero';
+
+  // Posición en ranking
+  const sorted = [...STUDENTS].sort((a, b) => points[b[0]] - points[a[0]]);
+  const rank = sorted.findIndex(([n]) => n === name) + 1;
+
+  // Logros
+  const achs = getAchievements(name);
+  const unlockedCount = achs.filter(a => a.unlocked).length;
+  const medals = getMedals(name);
+
+  // Publicaciones aprobadas (artículos y servicios)
+  const myProducts = allProducts.filter(pr => pr.ownerName === name && (pr.status === 'approved' || pr.status === 'traded'));
+
+  // Historial positivo
+  const posHistory = history.filter(m => m.name === name && m.sign === '+');
+
+  const catColors = { A: 'var(--green-l)', B: 'var(--blue-l)', C: 'var(--amber-l)', S: 'var(--purple-l)' };
+  const catText = { A: 'var(--green-d)', B: 'var(--blue)', C: 'var(--amber)', S: 'var(--purple)' };
+
+  // Header
+  let html = `
+    <div class="profile-header">
+      <div class="profile-avatar-lg ${pCls}">${initials(name)}</div>
+      <div class="profile-info">
+        <div class="profile-name">${name}</div>
+        <div class="profile-team">${team} · ${TEAM_TOPICS[team] || ''}</div>
+        ${medals ? `<div class="medals-strip" style="justify-content:flex-start;margin-top:.5rem"><span style="font-size:18px">${medals}</span></div>` : ''}
+      </div>
+    </div>
+  `;
+
+  // Stats
+  html += `
+    <div class="profile-stats">
+      <div class="profile-stat">
+        <div class="profile-stat-val" style="color:${p > 0 ? 'var(--green)' : p < 0 ? 'var(--red)' : 'var(--hint)'}">${p > 0 ? '+' : ''}${p}</div>
+        <div class="profile-stat-lbl">puntos</div>
+      </div>
+      <div class="profile-stat">
+        <div class="profile-stat-val">#${rank}</div>
+        <div class="profile-stat-lbl">de ${STUDENTS.length}</div>
+      </div>
+      <div class="profile-stat">
+        <div class="profile-stat-val">${unlockedCount}</div>
+        <div class="profile-stat-lbl">logros</div>
+      </div>
+    </div>
+  `;
+
+  // Publicaciones en el tablón
+  html += `<div class="profile-section-title">Publicaciones en el tablón</div>`;
+  if (myProducts.length) {
+    html += `<div class="profile-publications-grid">`;
+    html += myProducts.map(pr => {
+      const isService = pr.modality === 'service';
+      const icons = isService ? SERVICE_ICONS : TYPE_ICONS;
+      const imgHtml = pr.photos && pr.photos.length
+        ? `<img src="${pr.photos[0]}" class="tablon-img" loading="lazy">`
+        : `<div class="tablon-img-placeholder">${icons[pr.type] || '<i class="ph-fill ph-package"></i>'}</div>`;
+      const serviceBadge = isService ? `<div class="service-modality-badge"><i class="ph-fill ph-lightbulb"></i></div>` : '';
+      return `<div class="tablon-card" style="position:relative" onclick="openArtModal('${pr.id}')">
+        ${serviceBadge}${imgHtml}
+        <div class="tablon-body">
+          <div class="tablon-title">${pr.title}</div>
+          <div class="tablon-meta">
+            <span style="padding:1px 7px;border-radius:99px;font-size:10px;font-weight:500;background:${catColors[pr.category]};color:${catText[pr.category]}">Cat. ${pr.category}</span>
+            <span>${icons[pr.type] || ''} ${pr.type}</span>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+    html += `</div>`;
+  } else {
+    html += `<div class="card"><div class="empty">Aún no tiene publicaciones en el tablón</div></div>`;
+  }
+
+  // Logros
+  html += `<div class="profile-section-title">Logros</div>`;
+  html += achs.map(a => `
+    <div class="achievement-card ${a.unlocked ? '' : 'ach-locked'}">
+      <div class="ach-icon">${a.icon}</div>
+      <div class="ach-info">
+        <div class="ach-name">${a.name}</div>
+        <div class="ach-desc">${a.desc}</div>
+      </div>
+      ${a.unlocked ? '<span class="pill p-pos" style="font-size:11px">Obtenido</span>' : '<span class="pill p-zero" style="font-size:11px">Bloqueado</span>'}
+    </div>`).join('');
+
+  // Historial positivo
+  html += `<div class="profile-section-title">Historial de aportes</div>`;
+  if (posHistory.length) {
+    html += `<div class="card">${posHistory.map(m => histItemHtml(m)).join('')}</div>`;
+  } else {
+    html += `<div class="card"><div class="empty">Sin movimientos positivos registrados</div></div>`;
+  }
+
+  return html;
+}
+
+
 async function canjearArticulo(productId) {
   const p = allProducts.find(pr => pr.id === productId);
   if (!p) return;
 
   const [myName] = ROSTER[currentBoleta];
   const myPoints = points[myName] || 0;
-  const cost = p.pointsAwarded || GRADES[p.category];
+  const isService = (p.modality === 'service');
+  const cost = isService ? 0 : (p.pointsAwarded || p.requestedPoints || GRADES[p.category] || 0);
 
   // Validaciones
   if (p.ownerBoleta === currentBoleta) {
     alert('No puedes canjear tu propio artículo.');
     return;
   }
-  if (p.status === 'traded') {
+  if (p.status === 'traded' && !isService) {
     alert('Este artículo ya fue canjeado.');
     return;
   }
-  if (myPoints < cost) {
+  if (!isService && myPoints < cost) {
     alert(`No tienes suficientes puntos. Necesitas ${cost} pts y tienes ${myPoints}.`);
     return;
   }
 
-  const confirmar = confirm(`¿Confirmas el canje de "${p.title}" por ${cost} punto(s)?`);
+  const msgTipo = isService ? 'reserva' : 'canje';
+  const confirmar = isService
+    ? confirm(`¿Confirmas la reserva del servicio "${p.title}"? (Es gratuito)`)
+    : confirm(`¿Confirmas el canje de "${p.title}" por ${cost} punto(s)?`);
   if (!confirmar) return;
 
   try {
-    // 1. Marcar artículo como canjeado
-    await supaClient.from('products').update({
-      status: 'traded', tradedBy: myName, tradedByBoleta: currentBoleta, tradedTs: Date.now()
-    }).eq('id', productId);
+    // 1. Marcar artículo como canjeado (servicios no se consumen)
+    if (!isService) {
+      await supaClient.from('products').update({
+        status: 'traded', tradedBy: myName, tradedByBoleta: currentBoleta, tradedTs: Date.now()
+      }).eq('id', productId);
+    }
 
-    // 2. Descontar puntos al alumno que canjea
-    await supaClient.from('movements').insert([{
+    // 2. Registrar movimientos (descuento al comprador y notificación al dueño si es servicio)
+    const descTipo = isService ? 'Reserva de servicio' : 'Trueque';
+    const movesToInsert = [{
       name: myName, boleta: currentBoleta, grade: p.category, sign: '-', delta: -cost,
-      date: new Date().toISOString().slice(0, 10), desc: `Trueque: ${p.title} (${p.ownerName.split(' ')[0]})`,
+      date: new Date().toISOString().slice(0, 10), desc: `${descTipo}: ${p.title} (${p.ownerName.split(' ')[0]})`,
       ts: Date.now(), auto: true, trueque: true, productId
-    }]);
+    }];
+
+    if (isService) {
+      movesToInsert.push({
+        name: p.ownerName, boleta: p.ownerBoleta, grade: 'S', sign: '+', delta: 0,
+        date: new Date().toISOString().slice(0, 10), desc: `<i class="ph-fill ph-lightbulb"></i> ¡Tu servicio "${p.title}" fue reservado por ${myName.split(' ')[0]}!`,
+        ts: Date.now() + 1, auto: true, trueque: false
+      });
+    }
+
+    await supaClient.from('movements').insert(movesToInsert);
 
     // 3. Registrar el intercambio
     await supaClient.from('exchanges').insert([{
@@ -1573,7 +1986,7 @@ function showComprobante(exch) {
 
       <!-- Header verde -->
       <div style="background:#2D6A4F;padding:1.5rem;text-align:center;color:#fff">
-        <div style="font-size:32px;margin-bottom:.5rem">✅</div>
+        <div style="font-size:32px;margin-bottom:.5rem"><i class="ph-bold ph-check"></i></div>
         <div style="font-family:'DM Serif Display',serif;font-size:22px;margin-bottom:4px">¡Trueque exitoso!</div>
         <div style="font-size:12px;opacity:.8">Folio: ${exch.folio}</div>
       </div>
@@ -1586,7 +1999,7 @@ function showComprobante(exch) {
           border-radius:10px;margin-bottom:1rem;border:1px solid var(--border)">
           ${exch.productPhoto
       ? `<img src="${exch.productPhoto}" style="width:64px;height:64px;object-fit:cover;border-radius:8px;flex-shrink:0">`
-      : `<div style="width:64px;height:64px;border-radius:8px;background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">${TYPE_ICONS[exch.productType] || '📦'}</div>`
+      : `<div style="width:64px;height:64px;border-radius:8px;background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">${TYPE_ICONS[exch.productType] || '<i class="ph-fill ph-package"></i>'}</div>`
     }
           <div>
             <div style="font-size:14px;font-weight:500">${exch.productTitle}</div>
@@ -1792,19 +2205,19 @@ function renderAdmTrueques(exchanges) {
     const hora = new Date(e.ts).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
     const photoHtml = e.productPhoto
       ? `<img src="${e.productPhoto}" style="width:64px;height:64px;object-fit:cover;border-radius:var(--r);border:1px solid var(--border);flex-shrink:0">`
-      : `<div style="width:64px;height:64px;border-radius:var(--r);background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:24px;border:1px solid var(--border);flex-shrink:0">${TYPE_ICONS[e.productType] || '📦'}</div>`;
+      : `<div style="width:64px;height:64px;border-radius:var(--r);background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:24px;border:1px solid var(--border);flex-shrink:0">${TYPE_ICONS[e.productType] || '<i class="ph-fill ph-package"></i>'}</div>`;
 
     const actionsHtml = e.status !== 'completed' ? `
       <div style="display:flex;gap:8px;margin-top:10px">
         <button class="btn-approve" onclick="confirmTrueque('${e.id}')" style="flex:1">
-          ✅ Confirmar entrega física
+          <i class="ph-bold ph-check"></i> Confirmar entrega física
         </button>
-        <button onclick="deleteTrueque('${e.id}')" style="background:transparent;border:1px solid var(--red);color:var(--red);padding:6px 12px;border-radius:var(--r);cursor:pointer" title="Eliminar registro">🗑️</button>
+        <button onclick="deleteTrueque('${e.id}')" style="background:transparent;border:1px solid var(--red);color:var(--red);padding:6px 12px;border-radius:var(--r);cursor:pointer" title="Eliminar registro"><i class="ph-fill ph-trash"></i></button>
       </div>` :
       `<div style="margin-top:8px;display:flex;flex-direction:column;gap:4px">
         <div style="display:flex;justify-content:space-between;align-items:center">
-          <span class="status-approved">✅ Entrega confirmada · ${e.completedTs ? new Date(e.completedTs).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : ''}</span>
-          <button onclick="deleteTrueque('${e.id}')" style="background:transparent;border:none;color:var(--red);cursor:pointer;font-size:14px" title="Eliminar registro">🗑️</button>
+          <span class="status-approved"><i class="ph-bold ph-check"></i> Entrega confirmada · ${e.completedTs ? new Date(e.completedTs).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : ''}</span>
+          <button onclick="deleteTrueque('${e.id}')" style="background:transparent;border:none;color:var(--red);cursor:pointer;font-size:14px" title="Eliminar registro"><i class="ph-fill ph-trash"></i></button>
         </div>
         <span style="font-size:11px;color:var(--hint)">Confirmó: <strong style="color:var(--text)">${e.confirmedBy || 'Admin'}</strong></span>
       </div>`;
@@ -1906,7 +2319,7 @@ async function confirmTrueque(exchangeId) {
       }
     }
 
-    alert('✅ Entrega confirmada. El artículo fue eliminado del tablón.');
+    alert('<i class="ph-bold ph-check"></i> Entrega confirmada. El artículo fue eliminado del tablón.');
 
   } catch (e) {
     alert('Error al confirmar: ' + e.message);

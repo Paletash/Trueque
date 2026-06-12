@@ -21,6 +21,7 @@
       document.body.insertAdjacentHTML('beforeend', '<div style="color:red;font-size:20px;z-index:9999;position:fixed;top:40px;left:0;background:white;padding:10px;">Unhandled: ' + e.reason + '</div>');
     });
   </script>
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
 </head>
 
 <body>
@@ -93,6 +94,11 @@
         <div class="empty" style="grid-column:1/-1">Cargando artículos...</div>
       </div>
 
+      <div class="pub-section">Directorio de Servicios Digitales</div>
+      <div class="tablon-grid" id="pub-services">
+        <div class="empty" style="grid-column:1/-1">Cargando servicios...</div>
+      </div>
+
       <div class="pub-section">Equipos</div>
       <div class="team-grid" id="pub-teams"></div>
 
@@ -115,12 +121,12 @@
     </div>
     <div class="login-cards" id="login-cards">
       <div class="login-card" id="card-stu" onclick="choosePath('stu')">
-        <div class="login-card-icon">🎒</div>
+        <div class="login-card-icon"><i class="ph-fill ph-graduation-cap"></i></div>
         <h2>Soy alumno</h2>
         <p>Accede con tu número de boleta</p>
       </div>
       <div class="login-card" id="card-adm" onclick="choosePath('adm')">
-        <div class="login-card-icon">🔑</div>
+        <div class="login-card-icon"><i class="ph-fill ph-shield-check"></i></div>
         <h2>Administrador</h2>
       </div>
     </div>
@@ -146,6 +152,8 @@
       <button class="active" onclick="stuTab('mis',this)">Mis puntos</button>
       <button onclick="stuTab('articulos',this)">Mis artículos</button>
       <button onclick="stuTab('tablon',this)">Tablón</button>
+      <button onclick="stuTab('servicios',this)">Servicios</button>
+      <button onclick="stuTab('notificaciones',this)">Avisos <span id="mob-notif-badge" class="badge-count" style="display:none">0</span></button>
       <button onclick="stuTab('logros',this)">Logros</button>
       <button onclick="stuTab('equipo',this)">Equipo</button>
       <button onclick="stuTab('ranking',this)">Ranking</button>
@@ -181,6 +189,28 @@
                 d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
             </svg>
             Tablón de Trueques
+          </a>
+          <a onclick="stuTab('servicios',this)">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3" />
+              <path d="M12 2v2" />
+              <path d="M12 20v2" />
+              <path d="M4.22 4.22l1.42 1.42" />
+              <path d="M18.36 18.36l1.42 1.42" />
+              <path d="M2 12h2" />
+              <path d="M20 12h2" />
+              <path d="M4.22 19.78l1.42-1.42" />
+              <path d="M18.36 5.64l1.42-1.42" />
+            </svg>
+            Servicios Digitales
+          </a>
+          <a onclick="stuTab('notificaciones',this)">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+              <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+            </svg>
+            Notificaciones
+            <span class="badge-count" id="stu-badge-notif" style="display:none">0</span>
           </a>
           <a onclick="stuTab('logros',this)">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -261,13 +291,19 @@
                 </div>
               </div>
 
+              <!-- Selector de modalidad -->
+              <div class="modality-selector" id="modality-selector">
+                <button type="button" class="mod-btn active" id="mod-physical" onclick="selectModality('physical')">📦 Artículo físico</button>
+                <button type="button" class="mod-btn" id="mod-service" onclick="selectModality('service')">💡 Servicio digital</button>
+              </div>
+
               <div class="fg two">
                 <div>
-                  <label>Nombre del artículo</label>
+                  <label id="art-title-label">Nombre del artículo</label>
                   <input type="text" id="art-title" placeholder="Ej: Sudadera Nike talla M">
                 </div>
                 <div>
-                  <label>Tipo</label>
+                  <label id="art-type-label">Tipo</label>
                   <select id="art-type">
                     <option value="">Selecciona...</option>
                     <option>Ropa</option>
@@ -282,7 +318,7 @@
                   </select>
                 </div>
               </div>
-              <div class="fg">
+              <div class="fg" id="art-grade-wrap">
                 <div>
                   <label>Categoría</label>
                   <div class="grade-btns">
@@ -295,20 +331,32 @@
               </div>
               <div class="fg" id="special-pts-wrap" style="display:none">
                 <div>
-                  <label>Puntos solicitados (sólo Especiales)</label>
+                  <label id="special-pts-label">Puntos a solicitar por categoría Especial</label>
                   <input type="number" id="art-special-pts" min="1" placeholder="Ej: 5">
                 </div>
               </div>
               <div class="fg">
                 <div>
-                  <label>Descripción y estado de conservación</label>
+                  <label id="art-desc-label">Descripción y estado de conservación</label>
                   <textarea id="art-desc"
                     placeholder="Describe el artículo, su estado, medidas si aplica, etc."></textarea>
                 </div>
               </div>
+              <div class="fg" id="delivery-method-wrap" style="display:none">
+                <div>
+                  <label>Forma de entrega</label>
+                  <select id="art-delivery">
+                    <option value="">Selecciona...</option>
+                    <option>Videollamada</option>
+                    <option>Documento/PDF</option>
+                    <option>Grabación de video</option>
+                    <option>Chat/WhatsApp</option>
+                  </select>
+                </div>
+              </div>
               <div class="fg">
                 <div>
-                  <label>Fotografías (mín. 1, máx. 2)</label>
+                  <label id="art-photo-label">Fotografías (mín. 1, máx. 2)</label>
                   <div class="photo-upload-area" onclick="document.getElementById('art-photos').click()">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--muted)"
                       stroke-width="1.5">
@@ -377,6 +425,24 @@
           </div>
         </div>
 
+        <!-- SERVICIOS DIGITALES -->
+        <div id="stu-servicios" class="page">
+          <p class="page-title">Directorio de Servicios Digitales</p>
+          <div class="tablon-grid" id="stu-services-grid">
+            <div class="empty" style="grid-column:1/-1">Cargando servicios...</div>
+          </div>
+        </div>
+
+        <!-- NOTIFICACIONES -->
+        <div id="stu-notificaciones" class="page">
+          <p class="page-title">Tus notificaciones</p>
+          <div class="card" style="padding:0">
+            <div id="stu-notificaciones-list">
+              <div class="empty">Cargando...</div>
+            </div>
+          </div>
+        </div>
+
         <!-- OPCIONES (móvil) -->
         <div id="stu-opciones" class="page">
           <p class="page-title">Opciones</p>
@@ -402,6 +468,15 @@
             </button>
           </div>
         </div>
+
+        <!-- PERFIL DE ALUMNO -->
+        <div id="stu-perfil" class="page">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:1.5rem">
+            <button class="btn-back-profile" onclick="closeProfile()">← Volver</button>
+            <p class="page-title" style="margin-bottom:0" id="perfil-page-title">Perfil</p>
+          </div>
+          <div id="perfil-content"></div>
+        </div>
       </main>
     </div>
   </div>
@@ -410,10 +485,9 @@
   <div id="v-adm" class="view" style="flex-direction:column">
     <div class="m-nav" id="adm-mnav">
       <button class="active" onclick="admTab('dash',this)">Resumen</button>
-      <button onclick="admTab('upload',this)">Subir art.</button>
-      <button onclick="admTab('catalogo',this)">Catálogo <span class="badge-count" id="adm-badge-cat"
-          style="display:none">0</span></button>
-      <button onclick="admTab('reg',this)">Registrar</button>
+      <button onclick="admTab('catalogo',this)">Cat. Físico <span class="badge-count" id="adm-badge-cat-mob" style="display:none">0</span></button>
+      <button onclick="admTab('servicios',this)">Cat. Servicios</button>
+      <button onclick="admTab('reg',this)">Puntos</button>
       <button onclick="admTab('rank',this)">Ranking</button>
       <button onclick="admTab('equipos',this)">Equipos</button>
       <button onclick="admTab('hist',this)">Historial</button>
@@ -444,8 +518,22 @@
               <path
                 d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
             </svg>
-            Catálogo
+            Catálogo Físico
             <span class="badge-count" id="adm-badge-cat2" style="display:none">0</span>
+          </a>
+          <a onclick="admTab('servicios',this)">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3" />
+              <path d="M12 2v2" />
+              <path d="M12 20v2" />
+              <path d="M4.22 4.22l1.42 1.42" />
+              <path d="M18.36 18.36l1.42 1.42" />
+              <path d="M2 12h2" />
+              <path d="M20 12h2" />
+              <path d="M4.22 19.78l1.42-1.42" />
+              <path d="M18.36 5.64l1.42-1.42" />
+            </svg>
+            Catálogo Servicios
           </a>
           <a onclick="admTab('reg',this)">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -599,6 +687,21 @@
             <button class="review-tab" onclick="switchReviewTab('rejected',this)">Rechazados</button>
           </div>
           <div id="catalogo-list">
+            <div class="loading">Cargando...</div>
+          </div>
+        </div>
+
+        <!-- CATÁLOGO DE SERVICIOS -->
+        <div id="adm-servicios" class="page">
+          <p class="page-title">Catálogo de Servicios Digitales</p>
+          <div class="review-tabs">
+            <button class="review-tab active" onclick="switchSrvReviewTab('pending',this)">Pendientes <span
+                id="tab-srv-count-pending" class="badge-count"
+                style="display:inline;background:var(--amber)">0</span></button>
+            <button class="review-tab" onclick="switchSrvReviewTab('approved',this)">Aprobados</button>
+            <button class="review-tab" onclick="switchSrvReviewTab('rejected',this)">Rechazados</button>
+          </div>
+          <div id="adm-servicios-list">
             <div class="loading">Cargando...</div>
           </div>
         </div>
@@ -779,6 +882,15 @@
               Cerrar sesión
             </button>
           </div>
+        </div>
+
+        <!-- PERFIL DE ALUMNO (ADMIN) -->
+        <div id="adm-perfil" class="page">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:1.5rem">
+            <button class="btn-back-profile" onclick="closeAdmProfile()">← Volver</button>
+            <p class="page-title" style="margin-bottom:0" id="adm-perfil-page-title">Perfil</p>
+          </div>
+          <div id="adm-perfil-content"></div>
         </div>
 
       </main>
